@@ -1,14 +1,20 @@
 "use client"
 
-import { useMobile } from "@/hooks/use-mobile" // Added mobile detection
+import type React from "react"
+
+import { useState } from "react"
+import { useMobile } from "@/hooks/use-mobile"
+import type { WindowState } from "@/hooks/use-window-manager"
 
 interface DockProps {
   runningApps: string[]
   minimizedApps: string[]
   onAppSelect: (appId: string) => void
   onSystemAction?: (action: string) => void
+  onDockAction?: (appId: string, action: string) => void
   apps: Array<{ id: string; title: string }>
   onOpenApp: (appId: string) => void
+  windows: WindowState[]
 }
 
 const AppIcon = ({ type }: { type: string }) => {
@@ -88,96 +94,176 @@ const AppIcon = ({ type }: { type: string }) => {
   }
 }
 
-export function Dock({ runningApps, minimizedApps, onAppSelect, onSystemAction, apps, onOpenApp }: DockProps) {
+export function Dock({
+  runningApps,
+  minimizedApps,
+  onAppSelect,
+  onSystemAction,
+  onDockAction,
+  apps,
+  onOpenApp,
+  windows,
+}: DockProps) {
   const isMobile = useMobile()
+  const [contextMenu, setContextMenu] = useState<{ appId: string; x: number; y: number } | null>(null)
+
+  const handleContextMenu = (e: React.MouseEvent, appId: string) => {
+    e.preventDefault()
+    if (!runningApps.includes(appId)) return
+
+    setContextMenu({
+      appId,
+      x: e.clientX,
+      y: e.clientY,
+    })
+  }
+
+  const handleContextAction = (appId: string, action: string) => {
+    onDockAction?.(appId, action)
+    setContextMenu(null)
+  }
+
+  const getWindowState = (appId: string) => {
+    return windows.find((w) => w.appId === appId)
+  }
 
   return (
-    <nav
-      role="navigation"
-      aria-label="Application dock"
-      className={`
-        absolute left-1/2 transform -translate-x-1/2 z-50
-        ${isMobile ? "bottom-2" : "bottom-4"} 
-      `}
-    >
-      <div
+    <>
+      <nav
+        role="navigation"
+        aria-label="Application dock"
         className={`
-          bg-neo-bg border-2 border-neo-border shadow-neo backdrop-blur-sm
-          ${isMobile ? "rounded-2xl px-4 py-3" : "rounded-full px-8 py-4"}
+          absolute left-1/2 transform -translate-x-1/2 z-50
+          ${isMobile ? "bottom-2" : "bottom-4"} 
         `}
       >
-        <div className={`flex items-center ${isMobile ? "gap-4" : "gap-6"}`}>
-          <div className={`flex items-center ${isMobile ? "gap-2" : "gap-3"}`} role="group" aria-label="Applications">
-            {apps.map((app) => {
-              const isRunning = runningApps.includes(app.id)
-              const isMinimized = minimizedApps.includes(app.id)
+        <div
+          className={`
+            bg-neo-bg border-2 border-neo-border shadow-neo backdrop-blur-sm
+            ${isMobile ? "rounded-2xl px-4 py-3" : "rounded-full px-8 py-4"}
+          `}
+        >
+          <div className={`flex items-center ${isMobile ? "gap-4" : "gap-6"}`}>
+            <div className={`flex items-center ${isMobile ? "gap-2" : "gap-3"}`} role="group" aria-label="Applications">
+              {apps.map((app) => {
+                const isRunning = runningApps.includes(app.id)
+                const isMinimized = minimizedApps.includes(app.id)
 
-              return (
-                <button
-                  key={app.id}
-                  onClick={() => {
-                    if (isRunning) {
-                      onAppSelect(app.id)
-                    } else {
-                      onOpenApp(app.id)
-                    }
-                  }}
-                  className={`
-                    relative text-neo-fg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-150 neo-focus rounded-lg hover:bg-neo-bg2
-                    ${isMobile ? "p-3" : "p-2"}
-                  `}
-                  aria-label={isRunning ? `${isMinimized ? "Restore" : "Focus"} ${app.title}` : `Open ${app.title}`}
-                  aria-pressed={isRunning && !isMinimized}
-                  role="button"
-                  tabIndex={0}
+                return (
+                  <button
+                    key={app.id}
+                    onClick={() => {
+                      if (isRunning) {
+                        onAppSelect(app.id)
+                      } else {
+                        onOpenApp(app.id)
+                      }
+                    }}
+                    onContextMenu={(e) => handleContextMenu(e, app.id)}
+                    className={`
+                      relative text-neo-fg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-150 neo-focus rounded-lg hover:bg-neo-bg2
+                      ${isMobile ? "p-3" : "p-2"}
+                    `}
+                    aria-label={isRunning ? `${isMinimized ? "Restore" : "Focus"} ${app.title}` : `Open ${app.title}`}
+                    aria-pressed={isRunning && !isMinimized}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <AppIcon type={app.id} />
+                    {isRunning && (
+                      <div
+                        className={`absolute left-1/2 transform -translate-x-1/2 bg-neo-fg transition-all duration-150 ${
+                          isMinimized
+                            ? `w-2 h-2 rounded-sm ${isMobile ? "-bottom-1" : "-bottom-1"}` // Solid square for minimized
+                            : `w-1.5 h-1.5 rounded-full ${isMobile ? "-bottom-1" : "-bottom-1"}` // Dot for running
+                        }`}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className={`bg-neo-border opacity-30 ${isMobile ? "w-px h-8" : "w-px h-6"}`} aria-hidden="true"></div>
+
+            <button
+              onClick={() => onSystemAction?.("menu")}
+              className={`
+                text-neo-fg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform neo-focus rounded-lg hover:bg-neo-bg2
+                ${isMobile ? "p-3" : "p-2"}
+              `}
+              aria-label="Open system menu"
+              role="button"
+              tabIndex={0}
+            >
+              <AppIcon type="system" />
+            </button>
+
+            {runningApps.length === 0 && (
+              <>
+                <div
+                  className={`bg-neo-border opacity-30 ${isMobile ? "w-px h-8" : "w-px h-6"}`}
+                  aria-hidden="true"
+                ></div>
+                <div
+                  className={`font-bold text-neo-fg tracking-wider ${isMobile ? "text-base" : "text-sm"}`}
+                  aria-label="Neo-OS branding"
                 >
-                  <AppIcon type={app.id} />
-                  {isRunning && (
-                    <div
-                      className={`absolute left-1/2 transform -translate-x-1/2 bg-neo-fg transition-all duration-150 ${
-                        isMinimized
-                          ? `w-2 h-2 rounded-sm ${isMobile ? "-bottom-1" : "-bottom-1"}` // Solid square for minimized
-                          : `w-1.5 h-1.5 rounded-full ${isMobile ? "-bottom-1" : "-bottom-1"}` // Dot for running
-                      }`}
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              )
-            })}
+                  NEO-OS
+                </div>
+              </>
+            )}
           </div>
-
-          <div className={`bg-neo-border opacity-30 ${isMobile ? "w-px h-8" : "w-px h-6"}`} aria-hidden="true"></div>
-
-          <button
-            onClick={() => onSystemAction?.("menu")}
-            className={`
-              text-neo-fg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform neo-focus rounded-lg hover:bg-neo-bg2
-              ${isMobile ? "p-3" : "p-2"}
-            `}
-            aria-label="Open system menu"
-            role="button"
-            tabIndex={0}
-          >
-            <AppIcon type="system" />
-          </button>
-
-          {runningApps.length === 0 && (
-            <>
-              <div
-                className={`bg-neo-border opacity-30 ${isMobile ? "w-px h-8" : "w-px h-6"}`}
-                aria-hidden="true"
-              ></div>
-              <div
-                className={`font-bold text-neo-fg tracking-wider ${isMobile ? "text-base" : "text-sm"}`}
-                aria-label="Neo-OS branding"
-              >
-                NEO-OS
-              </div>
-            </>
-          )}
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {contextMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
+          <div
+            className="fixed z-50 bg-neo-bg border-4 border-black shadow-[8px_8px_0_0_#000] min-w-[180px]"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y - 200,
+            }}
+          >
+            <div className="py-2">
+              <button
+                onClick={() => handleContextAction(contextMenu.appId, "bring-to-front")}
+                className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-neo-bg2 transition-colors"
+              >
+                Bring to Front
+              </button>
+              <button
+                onClick={() => handleContextAction(contextMenu.appId, "minimize")}
+                className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-neo-bg2 transition-colors"
+              >
+                Minimize
+              </button>
+              {(() => {
+                const windowState = getWindowState(contextMenu.appId)
+                const isMaximized = windowState?.isMaximized || windowState?.tilingMode !== "normal"
+                return (
+                  <button
+                    onClick={() => handleContextAction(contextMenu.appId, isMaximized ? "restore" : "maximize")}
+                    className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-neo-bg2 transition-colors"
+                  >
+                    {isMaximized ? "Restore" : "Maximize"}
+                  </button>
+                )
+              })()}
+              <div className="border-t-2 border-black my-1" />
+              <button
+                onClick={() => handleContextAction(contextMenu.appId, "close")}
+                className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-neo-bg2 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   )
 }

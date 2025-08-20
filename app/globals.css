@@ -52,6 +52,16 @@
   --neo-shadow-hover: 2px 2px 0 0;
   --neo-border-width: 2px;
   --neo-radius: 12px;
+
+  /* Added responsive window management variables */
+  --desktop-padding: 16px;
+  --dock-h: 64px;
+  --topbar-h: 0px;
+  --win-border: 4px;
+
+  /* Responsive breakpoint adjustments */
+  --tablet-padding: 12px;
+  --mobile-padding: 0px;
 }
 
 .dark {
@@ -97,6 +107,20 @@
   --neo-fg-muted: #8a8a8a;
   --neo-border: #f5f2e8;
   --neo-shadow: #f5f2e8;
+}
+
+/* Added responsive breakpoint adjustments for window management */
+@media (max-width: 768px) {
+  :root {
+    --desktop-padding: var(--tablet-padding);
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --desktop-padding: var(--mobile-padding);
+    --dock-h: 60px;
+  }
 }
 
 @theme inline {

@@ -24,6 +24,9 @@ export default function HomePage() {
     tileWindow,
     restoreFromTiling,
     updateWindowPosition,
+    maximizeWindow,
+    restoreFromMaximize,
+    toggleMaximize,
     closeAllWindows,
     minimizeAllWindows,
     focusNextWindow,
@@ -175,7 +178,7 @@ export default function HomePage() {
             action: () => {
               const focusedWindow = getFocusedWindow()
               if (focusedWindow) {
-                tileWindow(focusedWindow.id, "maximize")
+                maximizeWindow(focusedWindow.id)
               }
             },
           },
@@ -185,8 +188,12 @@ export default function HomePage() {
             description: "Restore Window",
             action: () => {
               const focusedWindow = getFocusedWindow()
-              if (focusedWindow && focusedWindow.tilingMode !== "normal") {
-                restoreFromTiling(focusedWindow.id)
+              if (focusedWindow) {
+                if (focusedWindow.isMaximized) {
+                  restoreFromMaximize(focusedWindow.id)
+                } else if (focusedWindow.tilingMode !== "normal") {
+                  restoreFromTiling(focusedWindow.id)
+                }
               }
             },
           },
@@ -258,6 +265,38 @@ export default function HomePage() {
       setShortcutsHelpOpen(true)
     }
     console.log(`System action: ${action}`)
+  }
+
+  const handleDockAction = (appId: string, action: string) => {
+    const window = getWindowByAppId(appId)
+    if (!window) return
+
+    switch (action) {
+      case "bring-to-front":
+        focusWindow(window.id)
+        break
+      case "minimize":
+        minimizeWindow(window.id)
+        break
+      case "maximize":
+        if (window.isMinimized) {
+          restoreWindow(window.id)
+          setTimeout(() => maximizeWindow(window.id), 50)
+        } else {
+          maximizeWindow(window.id)
+        }
+        break
+      case "restore":
+        if (window.isMaximized) {
+          restoreFromMaximize(window.id)
+        } else if (window.tilingMode !== "normal") {
+          restoreFromTiling(window.id)
+        }
+        break
+      case "close":
+        closeWindow(window.id)
+        break
+    }
   }
 
   const handleCommandExecute = (command: CommandAction) => {
@@ -364,12 +403,16 @@ export default function HomePage() {
           isFocused={window.isFocused}
           zIndex={window.zIndex}
           tilingMode={window.tilingMode}
+          isMaximized={window.isMaximized}
           onClose={() => closeWindow(window.id)}
           onMinimize={() => minimizeWindow(window.id)}
           onFocus={() => focusWindow(window.id)}
           onPositionChange={(position) => updateWindowPosition(window.id, position)}
           onTile={(mode) => !isMobile && tileWindow(window.id, mode)}
           onRestoreFromTiling={() => !isMobile && restoreFromTiling(window.id)}
+          onMaximize={() => maximizeWindow(window.id)}
+          onRestoreFromMaximize={() => restoreFromMaximize(window.id)}
+          onToggleMaximize={() => toggleMaximize(window.id)}
         >
           {renderWindowContent(window.appId)}
         </Window>
@@ -386,8 +429,10 @@ export default function HomePage() {
         minimizedApps={minimizedApps}
         onAppSelect={handleAppSelect}
         onSystemAction={handleSystemAction}
+        onDockAction={handleDockAction}
         apps={apps}
         onOpenApp={handleOpenApp}
+        windows={windows}
       />
 
       {/* Debug info - hide on mobile */}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 
 export type TilingMode = "normal" | "tile-left" | "tile-right" | "maximize"
 
@@ -13,9 +13,11 @@ export interface WindowState {
   zIndex: number
   position: { x: number; y: number }
   size: { width: number; height: number }
-  tilingMode: TilingMode // Added tiling mode to window state
-  originalPosition?: { x: number; y: number } // Store original position for restore
-  originalSize?: { width: number; height: number } // Store original size for restore
+  tilingMode: TilingMode
+  originalPosition?: { x: number; y: number }
+  originalSize?: { width: number; height: number }
+  isMaximized: boolean
+  prevBounds?: { x: number; y: number; w: number; h: number }
 }
 
 export function useWindowManager() {
@@ -23,38 +25,114 @@ export function useWindowManager() {
   const [nextZIndex, setNextZIndex] = useState(100)
 
   const getTiledDimensions = useCallback((mode: TilingMode) => {
-    const screenWidth = typeof window !== "undefined" ? window.innerWidth : 1200
-    const screenHeight = typeof window !== "undefined" ? window.innerHeight : 800
-    const dockHeight = 100 // Account for dock space
-    const availableHeight = screenHeight - dockHeight
+    if (typeof window === "undefined") {
+      return {
+        position: { x: 16, y: 16 },
+        size: { width: 800, height: 600 },
+      }
+    }
+
+    const screenWidth = window.innerWidth
+    const screenHeight = window.innerHeight
+
+    // Get CSS variables with fallbacks
+    const computedStyle = getComputedStyle(document.documentElement)
+    const desktopPadding = Number.parseInt(computedStyle.getPropertyValue("--desktop-padding") || "16")
+    const dockHeight = Number.parseInt(computedStyle.getPropertyValue("--dock-h") || "64")
+    const topbarHeight = Number.parseInt(computedStyle.getPropertyValue("--topbar-h") || "0")
+
+    // Use dvh if available, fallback to vh
+    const viewportHeight = window.visualViewport?.height || screenHeight
+
+    // Responsive breakpoint detection
+    const isMobile = screenWidth < 640
+    const isTablet = screenWidth >= 640 && screenWidth < 1024
+    const isDesktop = screenWidth >= 1024
+
+    let padding = desktopPadding
+    let dock = dockHeight
+
+    if (isMobile) {
+      padding = 0 // Full screen on mobile
+      dock = 60
+    } else if (isTablet) {
+      padding = 12
+    }
+
+    const availableWidth = screenWidth - padding * 2
+    const availableHeight = viewportHeight - padding * 2 - dock - topbarHeight
 
     switch (mode) {
       case "tile-left":
         return {
-          position: { x: 0, y: 0 },
-          size: { width: Math.floor(screenWidth / 2), height: availableHeight },
+          position: { x: padding, y: padding + topbarHeight },
+          size: { width: Math.floor(availableWidth / 2), height: availableHeight },
         }
       case "tile-right":
         return {
-          position: { x: Math.floor(screenWidth / 2), y: 0 },
-          size: { width: Math.floor(screenWidth / 2), height: availableHeight },
+          position: { x: padding + Math.floor(availableWidth / 2), y: padding + topbarHeight },
+          size: { width: Math.floor(availableWidth / 2), height: availableHeight },
         }
       case "maximize":
+        if (isMobile) {
+          // Full screen sheet mode on mobile
+          return {
+            position: { x: 0, y: 0 },
+            size: { width: screenWidth, height: viewportHeight },
+          }
+        }
         return {
-          position: { x: 0, y: 0 },
-          size: { width: screenWidth, height: availableHeight },
+          position: { x: padding, y: padding + topbarHeight },
+          size: { width: availableWidth, height: availableHeight },
         }
       default:
         return null
     }
   }, [])
 
+  useEffect(() => {
+    const handleResize = () => {
+      setWindows((prev) =>
+        prev.map((w) => {
+          if (w.isMaximized || w.tilingMode !== "normal") {
+            const newDimensions = getTiledDimensions(w.tilingMode)
+            if (newDimensions) {
+              return {
+                ...w,
+                position: newDimensions.position,
+                size: newDimensions.size,
+              }
+            }
+          }
+          return w
+        }),
+      )
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize)
+      window.addEventListener("orientationchange", handleResize)
+
+      // Handle visual viewport changes (mobile keyboard, etc.)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", handleResize)
+      }
+
+      return () => {
+        window.removeEventListener("resize", handleResize)
+        window.removeEventListener("orientationchange", handleResize)
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener("resize", handleResize)
+        }
+      }
+    }
+  }, [getTiledDimensions])
+
   const openWindow = useCallback(
     (appId: string, title: string, options?: Partial<Pick<WindowState, "position" | "size">>) => {
       const existingWindow = windows.find((w) => w.appId === appId)
 
       if (existingWindow) {
-        // Focus existing window and restore if minimized
         if (existingWindow.isMinimized) {
           restoreWindow(existingWindow.id)
         } else {
@@ -63,7 +141,6 @@ export function useWindowManager() {
         return existingWindow.id
       }
 
-      // Create new window with improved positioning
       const windowId = `${appId}-${Date.now()}`
       const defaultSize = { width: 800, height: 600 }
       const newWindow: WindowState = {
@@ -78,7 +155,8 @@ export function useWindowManager() {
           y: Math.max(50, 100 + (windows.length % 5) * 40),
         },
         size: options?.size || defaultSize,
-        tilingMode: "normal", // Initialize with normal tiling mode
+        tilingMode: "normal",
+        isMaximized: false,
       }
 
       setWindows((prev) => prev.map((w) => ({ ...w, isFocused: false })).concat(newWindow))
@@ -87,6 +165,71 @@ export function useWindowManager() {
       return windowId
     },
     [windows, nextZIndex],
+  )
+
+  const maximizeWindow = useCallback(
+    (windowId: string) => {
+      const tiledDimensions = getTiledDimensions("maximize")
+      if (!tiledDimensions) return
+
+      setWindows((prev) =>
+        prev.map((w) => {
+          if (w.id === windowId && !w.isMaximized) {
+            return {
+              ...w,
+              prevBounds: { x: w.position.x, y: w.position.y, w: w.size.width, h: w.size.height },
+              position: tiledDimensions.position,
+              size: tiledDimensions.size,
+              isMaximized: true,
+              tilingMode: "maximize",
+              isFocused: true,
+              zIndex: nextZIndex,
+            }
+          }
+          return { ...w, isFocused: false }
+        }),
+      )
+      setNextZIndex((prev) => prev + 1)
+    },
+    [getTiledDimensions, nextZIndex],
+  )
+
+  const restoreFromMaximize = useCallback(
+    (windowId: string) => {
+      setWindows((prev) =>
+        prev.map((w) => {
+          if (w.id === windowId && w.isMaximized && w.prevBounds) {
+            return {
+              ...w,
+              position: { x: w.prevBounds.x, y: w.prevBounds.y },
+              size: { width: w.prevBounds.w, height: w.prevBounds.h },
+              isMaximized: false,
+              tilingMode: "normal",
+              prevBounds: undefined,
+              isFocused: true,
+              zIndex: nextZIndex,
+            }
+          }
+          return { ...w, isFocused: false }
+        }),
+      )
+      setNextZIndex((prev) => prev + 1)
+    },
+    [nextZIndex],
+  )
+
+  const toggleMaximize = useCallback(
+    (windowId: string) => {
+      const window = windows.find((w) => w.id === windowId)
+      if (!window) return
+
+      if (window.isMaximized) {
+        restoreFromMaximize(windowId)
+      } else {
+        maximizeWindow(windowId)
+      }
+    },
+    [windows, maximizeWindow, restoreFromMaximize],
   )
 
   const closeWindow = useCallback((windowId: string) => {
@@ -135,9 +278,8 @@ export function useWindowManager() {
       setWindows((prev) =>
         prev.map((w) => {
           if (w.id === windowId) {
-            // Store original dimensions if switching from normal mode
-            const originalPosition = w.tilingMode === "normal" ? w.position : w.originalPosition
-            const originalSize = w.tilingMode === "normal" ? w.size : w.originalSize
+            const originalPosition = w.tilingMode === "normal" && !w.isMaximized ? w.position : w.originalPosition
+            const originalSize = w.tilingMode === "normal" && !w.isMaximized ? w.size : w.originalSize
 
             return {
               ...w,
@@ -146,6 +288,11 @@ export function useWindowManager() {
               tilingMode: mode,
               originalPosition,
               originalSize,
+              isMaximized: mode === "maximize",
+              prevBounds:
+                mode === "maximize" && !w.isMaximized
+                  ? { x: w.position.x, y: w.position.y, w: w.size.width, h: w.size.height }
+                  : w.prevBounds,
               isFocused: true,
               zIndex: nextZIndex,
             }
@@ -163,11 +310,22 @@ export function useWindowManager() {
       setWindows((prev) =>
         prev.map((w) => {
           if (w.id === windowId && w.tilingMode !== "normal") {
+            const restorePosition =
+              w.isMaximized && w.prevBounds
+                ? { x: w.prevBounds.x, y: w.prevBounds.y }
+                : w.originalPosition || { x: 100, y: 100 }
+            const restoreSize =
+              w.isMaximized && w.prevBounds
+                ? { width: w.prevBounds.w, height: w.prevBounds.h }
+                : w.originalSize || { width: 800, height: 600 }
+
             return {
               ...w,
-              position: w.originalPosition || { x: 100, y: 100 },
-              size: w.originalSize || { width: 800, height: 600 },
+              position: restorePosition,
+              size: restoreSize,
               tilingMode: "normal",
+              isMaximized: false,
+              prevBounds: undefined,
               isFocused: true,
               zIndex: nextZIndex,
             }
@@ -184,11 +342,12 @@ export function useWindowManager() {
     setWindows((prev) =>
       prev.map((w) => {
         if (w.id === windowId) {
-          // Reset tiling mode when manually moved
           return {
             ...w,
             position,
             tilingMode: "normal",
+            isMaximized: false,
+            prevBounds: undefined,
           }
         }
         return w
@@ -249,9 +408,12 @@ export function useWindowManager() {
     minimizeWindow,
     restoreWindow,
     focusWindow,
-    tileWindow, // Added tiling function
-    restoreFromTiling, // Added restore from tiling function
-    updateWindowPosition, // Added position update function
+    tileWindow,
+    restoreFromTiling,
+    updateWindowPosition,
+    maximizeWindow,
+    restoreFromMaximize,
+    toggleMaximize,
     closeAllWindows,
     minimizeAllWindows,
     focusNextWindow,
@@ -259,6 +421,6 @@ export function useWindowManager() {
     getMinimizedApps,
     getVisibleWindows,
     getWindowByAppId,
-    getFocusedWindow, // Added focused window getter
+    getFocusedWindow,
   }
 }
