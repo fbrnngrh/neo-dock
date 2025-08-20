@@ -2,25 +2,31 @@
 
 import { useState, useEffect } from "react"
 import { ExplorerTree } from "@/components/apps/ide/ExplorerTree"
-import { EditorTabs, type EditorTab } from "@/components/apps/ide/EditorTabs"
-import { EditorPane } from "@/components/apps/ide/EditorPane"
+import { PaneManager } from "@/components/apps/ide/PaneManager"
 import { InspectorPane } from "@/components/apps/ide/InspectorPane"
 import { StatusBar } from "@/components/apps/ide/StatusBar"
 import { TerminalPanel } from "@/components/apps/ide/TerminalPanel"
 import { KeyboardShortcutsHelp } from "@/components/apps/ide/KeyboardShortcutsHelp"
-import { type FileNode, findFileByPath } from "@/data/files"
+import { QuickOpen } from "@/components/apps/ide/QuickOpen"
+import { type FileNode, findFileByPath, fileTree } from "@/data/files"
 import { runnerRouter } from "@/lib/runner/Router"
 import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts"
+import { fsOperations, type FSState } from "@/lib/fs/operations"
 
 export function IDEView() {
-  const [tabs, setTabs] = useState<EditorTab[]>([])
-  const [activeTab, setActiveTab] = useState<string>()
+  const [fsState, setFsState] = useState<FSState>(fsOperations.getState())
   const [projectFilterMode, setProjectFilterMode] = useState<"and" | "or">("and")
   const [isTerminalVisible, setIsTerminalVisible] = useState(true)
   const [isRunning, setIsRunning] = useState(false)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const [showQuickOpen, setShowQuickOpen] = useState(false)
 
-  const activeFile = activeTab ? findFileByPath(activeTab) : null
+  const activeFile = fsState.activePath ? findFileByPath(fsState.activePath) : null
+
+  useEffect(() => {
+    const unsubscribe = fsOperations.subscribe(setFsState)
+    return unsubscribe
+  }, [])
 
   const shortcuts = [
     {
@@ -68,9 +74,9 @@ export function IDEView() {
       key: "p",
       ctrlKey: true,
       action: () => {
-        window.dispatchEvent(new CustomEvent("open-command-palette"))
+        setShowQuickOpen(true)
       },
-      description: "Open command palette",
+      description: "Quick Open",
     },
     {
       key: "F1",
@@ -110,8 +116,8 @@ export function IDEView() {
           setIsTerminalVisible(!isTerminalVisible)
           break
         case "split-editor":
-          // TODO: Implement split editor functionality
-          console.log("Split editor not yet implemented")
+          // This is now handled by PaneManager
+          console.log("Split editor handled by PaneManager")
           break
         case "open-playground-template":
           // TODO: Implement template opening
@@ -132,42 +138,10 @@ export function IDEView() {
     return () => window.removeEventListener("command-palette-action", handleCommandPaletteAction as EventListener)
   }, [activeFile, isTerminalVisible])
 
-  const handleFileSelect = (file: FileNode) => {
+  const handleFileSelect = (file: FileNode, asPreview = true) => {
     if (file.type === "file") {
-      // Check if tab already exists
-      const existingTab = tabs.find((tab) => tab.path === file.path)
-
-      if (!existingTab) {
-        // Create new tab
-        const newTab: EditorTab = {
-          path: file.path,
-          title: file.name,
-          dirty: false,
-        }
-        setTabs((prev) => [...prev, newTab])
-      }
-
-      setActiveTab(file.path)
+      fsOperations.openFile(file.path, asPreview)
     }
-  }
-
-  const handleTabClose = (path: string) => {
-    setTabs((prev) => prev.filter((tab) => tab.path !== path))
-
-    if (activeTab === path) {
-      const remainingTabs = tabs.filter((tab) => tab.path !== path)
-      setActiveTab(remainingTabs.length > 0 ? remainingTabs[remainingTabs.length - 1].path : undefined)
-    }
-  }
-
-  const handleFilterModeToggle = () => {
-    setProjectFilterMode((prev) => (prev === "and" ? "or" : "and"))
-    // Dispatch custom event to update Projects filter globally
-    window.dispatchEvent(
-      new CustomEvent("projects-filter-mode-change", {
-        detail: { mode: projectFilterMode === "and" ? "or" : "and" },
-      }),
-    )
   }
 
   const handleRunResult = (result: any) => {
@@ -311,20 +285,24 @@ export function IDEView() {
     }
   }
 
+  const handleFilterModeToggle = () => {
+    setProjectFilterMode((prevMode) => (prevMode === "and" ? "or" : "and"))
+  }
+
   return (
     <div className="h-full flex flex-col bg-neo-bg">
       <div className="flex-1 flex">
         <div className="w-64">
-          <ExplorerTree onFileSelect={handleFileSelect} selectedPath={activeTab} />
+          <ExplorerTree
+            onFileSelect={handleFileSelect}
+            selectedPath={fsState.activePath || undefined}
+            fileTree={fileTree}
+          />
         </div>
 
         <div className="flex-1 flex flex-col">
-          <EditorTabs tabs={tabs} activeTab={activeTab} onTabSelect={setActiveTab} onTabClose={handleTabClose} />
-
-          <div className="flex-1 flex">
-            <EditorPane file={activeFile} onRunResult={handleRunResult} />
-            <InspectorPane file={activeFile} />
-          </div>
+          <PaneManager onRunResult={handleRunResult} />
+          <InspectorPane file={activeFile} />
         </div>
       </div>
 
@@ -343,6 +321,8 @@ export function IDEView() {
       />
 
       <KeyboardShortcutsHelp isOpen={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
+
+      <QuickOpen isOpen={showQuickOpen} onClose={() => setShowQuickOpen(false)} onFileSelect={handleFileSelect} />
     </div>
   )
 }
