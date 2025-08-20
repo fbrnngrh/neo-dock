@@ -8,7 +8,7 @@ export function ContactView() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="bg-neo-bg border-4 border-neo-border shadow-neo rounded-none p-6">
         <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-neo-fg">Contact</h1>
