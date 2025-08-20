@@ -4,22 +4,43 @@ import type { FileNode } from "@/data/files"
 import { profile } from "@/data/profile"
 import { projects } from "@/data/projects"
 import { skills } from "@/data/skills"
+import { CodeEditor } from "./CodeEditor"
+import { findFileByPath } from "@/data/files"
 
 interface EditorPaneProps {
   file: FileNode | null
+  onRunResult?: (result: any) => void
 }
 
-export function EditorPane({ file }: EditorPaneProps) {
+export function EditorPane({ file, onRunResult }: EditorPaneProps) {
   if (!file) {
     return (
       <div className="flex-1 bg-neo-bg flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-4">📝</div>
           <h3 className="text-lg font-bold text-neo-fg mb-2">No file selected</h3>
-          <p className="text-sm text-neo-fg opacity-60">Select a file from the explorer to view its content</p>
+          <p className="text-sm text-neo-fg opacity-60">Select a file from the explorer to start coding</p>
         </div>
       </div>
     )
+  }
+
+  // For playground files, use the code editor
+  if (file.meta?.kind === "playground" || (file.language && ["js", "ts", "html", "css"].includes(file.language))) {
+    // Get related files for HTML projects
+    const relatedFiles: FileNode[] = []
+    if (file.path.includes("/HTML App/") || file.path.includes("/Playground/HTML")) {
+      const folderPath = file.path.substring(0, file.path.lastIndexOf("/"))
+      const htmlFile = findFileByPath(`${folderPath}/index.html`)
+      const cssFile = findFileByPath(`${folderPath}/style.css`)
+      const jsFile = findFileByPath(`${folderPath}/app.js`)
+
+      if (htmlFile && htmlFile.path !== file.path) relatedFiles.push(htmlFile)
+      if (cssFile && cssFile.path !== file.path) relatedFiles.push(cssFile)
+      if (jsFile && jsFile.path !== file.path) relatedFiles.push(jsFile)
+    }
+
+    return <CodeEditor file={file} onRunResult={onRunResult} relatedFiles={relatedFiles} />
   }
 
   const renderContent = () => {

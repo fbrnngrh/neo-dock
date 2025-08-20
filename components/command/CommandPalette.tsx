@@ -5,6 +5,7 @@ import { fuzzySearch } from "@/lib/fuzzy"
 import { appRegistry } from "@/lib/app-registry"
 import { projects } from "@/data/projects"
 import { skills } from "@/data/skills"
+import { getPlaygroundTemplates, getAllFiles } from "@/data/files"
 
 export interface CommandAction {
   id: string
@@ -264,23 +265,16 @@ export function CommandPalette({ open, onOpenChange, onExecute }: CommandPalette
       })
     })
 
-    const files = [
-      { path: "/About.md", name: "About.md", kind: "about" },
-      { path: "/Projects/E-Commerce Platform.md", name: "E-Commerce Platform.md", kind: "project" },
-      { path: "/Projects/Task Management App.md", name: "Task Management App.md", kind: "project" },
-      { path: "/Skills/Frontend.md", name: "Frontend.md", kind: "skill" },
-      { path: "/Contact.md", name: "Contact.md", kind: "contact" },
-    ]
-
-    files.forEach((file) => {
+    const allFiles = getAllFiles()
+    allFiles.forEach((file) => {
       items.push({
         id: `file-${file.path}`,
         label: file.name,
         category: "file",
         description: `Open ${file.name} in IDE`,
         payload: { filePath: file.path, fileName: file.name },
-        keywords: [file.name, file.kind, "file", "open"],
-        priority: "low",
+        keywords: [file.name, file.meta?.kind || "file", "open", file.language || ""].filter(Boolean),
+        priority: file.meta?.featured ? "high" : "low",
         slug: file.path,
       })
     })
@@ -327,6 +321,69 @@ export function CommandPalette({ open, onOpenChange, onExecute }: CommandPalette
         keywords: [skill.name, skill.category, skill.level],
         priority: skill.level === "Expert" ? "high" : skill.level === "Advanced" ? "medium" : "low",
         slug: skill.name.toLowerCase().replace(/\s+/g, "-"),
+      })
+    })
+
+    items.push(
+      {
+        id: "action-run-active-file",
+        label: "Run Active File",
+        category: "action",
+        description: "Execute the currently active file in the IDE",
+        payload: { action: "run-active-file" },
+        keywords: ["run", "execute", "active", "file", "code"],
+        priority: "high",
+        slug: "run-active-file",
+      },
+      {
+        id: "action-stop-runner",
+        label: "Stop Runner",
+        category: "action",
+        description: "Stop the currently running code execution",
+        payload: { action: "stop-runner" },
+        keywords: ["stop", "runner", "execution", "terminate"],
+        priority: "high",
+        slug: "stop-runner",
+      },
+      {
+        id: "action-toggle-terminal",
+        label: "Toggle Terminal",
+        category: "action",
+        description: "Show or hide the terminal panel",
+        payload: { action: "toggle-terminal" },
+        keywords: ["toggle", "terminal", "panel", "show", "hide"],
+        priority: "medium",
+        slug: "toggle-terminal",
+      },
+      {
+        id: "action-split-editor",
+        label: "Split Editor",
+        category: "action",
+        description: "Split the editor view horizontally or vertically",
+        payload: { action: "split-editor" },
+        keywords: ["split", "editor", "view", "horizontal", "vertical"],
+        priority: "medium",
+        slug: "split-editor",
+      },
+    )
+
+    const templates = getPlaygroundTemplates()
+    Object.entries(templates).forEach(([templateId, template]) => {
+      const templateLabels = {
+        "js-worker": "JavaScript Worker",
+        "html-iframe": "HTML Application",
+        "ts-worker": "TypeScript Worker",
+      }
+
+      items.push({
+        id: `template-${templateId}`,
+        label: `New ${templateLabels[templateId as keyof typeof templateLabels] || templateId}`,
+        category: "action",
+        description: `Create a new ${templateLabels[templateId as keyof typeof templateLabels] || templateId} playground`,
+        payload: { action: "open-playground-template", templateId },
+        keywords: ["new", "template", "playground", templateId, "create"],
+        priority: "medium",
+        slug: `template-${templateId}`,
       })
     })
 

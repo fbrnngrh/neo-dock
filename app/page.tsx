@@ -9,7 +9,7 @@ import { KeyboardShortcutsHelp } from "@/components/desktop/KeyboardShortcutsHel
 import { useWindowManager } from "@/hooks/use-window-manager"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useFocusManagement } from "@/hooks/use-focus-management"
-import { useMobile } from "@/hooks/use-mobile" // Added mobile detection
+import { useMobile } from "@/hooks/use-mobile"
 import { apps } from "@/data/apps"
 import { getAppById } from "@/lib/app-registry"
 
@@ -37,7 +37,7 @@ export default function HomePage() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
   const { setFocus } = useFocusManagement()
-  const isMobile = useMobile() // Added mobile detection
+  const isMobile = useMobile()
   const runningApps = getRunningApps()
   const minimizedApps = getMinimizedApps()
 
@@ -53,6 +53,18 @@ export default function HomePage() {
       key: "k",
       ctrlKey: true,
       shiftKey: true,
+      description: "Open Command Palette (Windows/Linux)",
+      action: () => setCommandPaletteOpen(true),
+    },
+    {
+      key: "p",
+      metaKey: true,
+      description: "Open Command Palette",
+      action: () => setCommandPaletteOpen(true),
+    },
+    {
+      key: "p",
+      ctrlKey: true,
       description: "Open Command Palette (Windows/Linux)",
       action: () => setCommandPaletteOpen(true),
     },
@@ -194,16 +206,34 @@ export default function HomePage() {
       focusNextWindow()
     }
 
+    const handleOpenCommandPalette = () => {
+      setCommandPaletteOpen(true)
+    }
+
+    const handleCommandPaletteAction = (event: CustomEvent) => {
+      const { action, templateId, filePath } = event.detail
+
+      // Dispatch to IDE if it's running
+      const ideWindow = getWindowByAppId("ide")
+      if (ideWindow) {
+        window.dispatchEvent(new CustomEvent("command-palette-action", { detail: event.detail }))
+      }
+    }
+
     window.addEventListener("terminal-open-app", handleTerminalOpenApp as EventListener)
     window.addEventListener("terminal-close-all-windows", handleTerminalCloseAllWindows)
     window.addEventListener("terminal-focus-next-window", handleTerminalFocusNextWindow)
+    window.addEventListener("open-command-palette", handleOpenCommandPalette)
+    window.addEventListener("command-palette-action", handleCommandPaletteAction as EventListener)
 
     return () => {
       window.removeEventListener("terminal-open-app", handleTerminalOpenApp as EventListener)
       window.removeEventListener("terminal-close-all-windows", handleTerminalCloseAllWindows)
       window.removeEventListener("terminal-focus-next-window", handleTerminalFocusNextWindow)
+      window.removeEventListener("open-command-palette", handleOpenCommandPalette)
+      window.removeEventListener("command-palette-action", handleCommandPaletteAction as EventListener)
     }
-  }, [closeAllWindows, focusNextWindow])
+  }, [closeAllWindows, focusNextWindow, getWindowByAppId])
 
   const handleOpenApp = (appId: string) => {
     const app = apps.find((a) => a.id === appId)
@@ -235,6 +265,16 @@ export default function HomePage() {
       case "app":
         handleOpenApp(command.payload.appId)
         break
+      case "file":
+        handleOpenApp("ide")
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("command-palette-action", {
+              detail: { action: "open-file", filePath: command.payload.filePath },
+            }),
+          )
+        }, 100)
+        break
       case "project":
         handleOpenApp("projects")
         console.log("Selected project:", command.payload.project)
@@ -261,6 +301,30 @@ export default function HomePage() {
               )
             }, 100)
             break
+          case "run-active-file":
+          case "stop-runner":
+          case "toggle-terminal":
+          case "split-editor":
+          case "open-playground-template":
+            const ideWindow = getWindowByAppId("ide")
+            if (ideWindow) {
+              window.dispatchEvent(
+                new CustomEvent("command-palette-action", {
+                  detail: command.payload,
+                }),
+              )
+            } else {
+              // Open IDE first, then execute action
+              handleOpenApp("ide")
+              setTimeout(() => {
+                window.dispatchEvent(
+                  new CustomEvent("command-palette-action", {
+                    detail: command.payload,
+                  }),
+                )
+              }, 100)
+            }
+            break
         }
         break
     }
@@ -282,7 +346,7 @@ export default function HomePage() {
         <div className="absolute top-4 right-4 z-10">
           <div className="bg-black text-white neo-border px-4 py-2">
             <div className={`font-mono ${isMobile ? "text-xs" : "text-sm"}`}>
-              {isMobile ? "Tap dock apps to open" : "⌘⇧K: Command • ⌘/: Help • Alt+1-6: Apps"}
+              {isMobile ? "Tap dock apps to open" : "⌘P: Command • ⌘/: Help • Alt+1-6: Apps"}
             </div>
           </div>
         </div>
