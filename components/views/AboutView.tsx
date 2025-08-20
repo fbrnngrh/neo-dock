@@ -4,7 +4,7 @@ import { profile } from "@/data/profile"
 
 export function AboutView() {
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       {/* Hero Section */}
       <div className="bg-neo-bg border-2 border-neo-border shadow-neo rounded-xl p-8">
         <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-neo-fg">{profile.name}</h1>
