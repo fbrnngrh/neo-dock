@@ -1,5 +1,5 @@
 export interface AppRegistryItem {
-  id: "about" | "projects" | "skills" | "contact"
+  id: "about" | "projects" | "skills" | "contact" | "ide" | "terminal" // Added ide and terminal app IDs
   title: string
   icon: string
   keywords: string[]
@@ -29,5 +29,17 @@ export const apps: AppRegistryItem[] = [
     title: "Contact",
     icon: "📧",
     keywords: ["contact", "email", "social", "connect", "reach", "hire"],
+  },
+  {
+    id: "ide",
+    title: "IDE",
+    icon: "💻",
+    keywords: ["ide", "editor", "code", "files", "explorer", "development"],
+  },
+  {
+    id: "terminal",
+    title: "Terminal",
+    icon: "⌨️",
+    keywords: ["terminal", "console", "command", "cli", "shell", "commands"],
   },
 ]

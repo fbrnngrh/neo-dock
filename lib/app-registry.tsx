@@ -3,6 +3,8 @@ import { AboutView } from "@/components/views/AboutView"
 import { ProjectsView } from "@/components/views/ProjectsView"
 import { SkillsView } from "@/components/views/SkillsView"
 import { ContactView } from "@/components/views/ContactView"
+import { IDEView } from "@/components/views/IDEView"
+import { TerminalView } from "@/components/views/TerminalView" // Added TerminalView import
 import { apps } from "@/data/apps"
 
 export interface AppRegistryItem {
@@ -28,6 +30,10 @@ function getAppComponent(appId: string): React.ComponentType {
       return SkillsView
     case "contact":
       return ContactView
+    case "ide":
+      return IDEView
+    case "terminal": // Added proper TerminalView component mapping
+      return TerminalView
     default:
       return () => <div>Unknown app: {appId}</div>
   }

@@ -26,14 +26,14 @@ const LineArtIcon = ({ type }: { type: string }) => {
   switch (type) {
     case "about":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24">
+        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
       )
     case "projects":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24">
+        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
           <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
           <circle cx="9" cy="9" r="2" />
           <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
@@ -41,14 +41,14 @@ const LineArtIcon = ({ type }: { type: string }) => {
       )
     case "skills":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24">
+        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
           <polyline points="12,6 12,12 16,14" />
         </svg>
       )
     case "contact":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24">
+        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
           <polyline points="14,2 14,8 20,8" />
           <line x1="16" y1="13" x2="8" y2="13" />
@@ -56,9 +56,24 @@ const LineArtIcon = ({ type }: { type: string }) => {
           <polyline points="10,9 9,9 8,9" />
         </svg>
       )
+    case "ide":
+      return (
+        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
+          <rect width="18" height="10" x="3" y="11" rx="2" />
+          <circle cx="12" cy="5" r="2" />
+          <path d="m12 7-2 4h4l-2-4Z" />
+        </svg>
+      )
+    case "terminal":
+      return (
+        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points="4,17 10,11 4,5" />
+          <line x1="12" y1="19" x2="20" y2="19" />
+        </svg>
+      )
     default:
       return (
-        <svg {...iconProps} viewBox="0 0 24 24">
+        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
         </svg>
       )
@@ -101,11 +116,16 @@ export function AppIcon({ appId, title, icon, onOpen, isSelected = false, id }: 
       role="button"
       aria-label={`Open ${title} application`}
       aria-pressed={isPressed}
+      aria-describedby={`${appId}-description`}
+      type="button"
     >
-      <div className="text-neo-fg pointer-events-none">
+      <div className="text-neo-fg pointer-events-none" aria-hidden="true">
         <LineArtIcon type={appId} />
       </div>
-      <div className="text-sm font-bold text-neo-fg pointer-events-none max-w-20 text-center leading-tight">
+      <div
+        className="text-sm font-bold text-neo-fg pointer-events-none max-w-20 text-center leading-tight"
+        id={`${appId}-description`}
+      >
         {title}
       </div>
     </button>

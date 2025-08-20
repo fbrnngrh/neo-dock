@@ -11,6 +11,8 @@ interface DesktopProps {
 export function Desktop({ children, wallpaper, onContextHelp }: DesktopProps) {
   return (
     <div
+      role="main"
+      aria-label="Neo-OS Desktop"
       className="h-screen w-screen overflow-hidden relative bg-neo-bg"
       style={{
         background:
@@ -28,6 +30,7 @@ export function Desktop({ children, wallpaper, onContextHelp }: DesktopProps) {
     >
       {/* Desktop content area */}
       <div
+        aria-label="Desktop workspace"
         className="relative h-full w-full p-4"
         style={{
           backgroundImage: `radial-gradient(circle at center, rgba(26, 26, 26, 0.12) 1.5px, transparent 1.5px)`,
