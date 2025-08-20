@@ -6,7 +6,6 @@ export interface FSState {
   activePath: string | null
   selection: string[]
   versions: Record<string, { ts: number; content: string }[]>
-  dirtyTabs?: Record<string, boolean>
 }
 
 export interface Tab {
@@ -16,90 +15,78 @@ export interface Tab {
   isPreview: boolean
 }
 
-class FileSystemOperations {
-  private static instance: FileSystemOperations
-  private state: FSState
-  private listeners: Set<(state: FSState) => void> = new Set()
+export class FSOperations {
+  private static readonly STORAGE_KEY = "neo.ide.fs.tree"
+  private static readonly VERSIONS_KEY = "neo.ide.fs.versions"
+  private static readonly TABS_KEY = "neo.ide.tabs"
 
-  private constructor() {
-    this.state = this.loadState()
-  }
-
-  static getInstance(): FileSystemOperations {
-    if (!FileSystemOperations.instance) {
-      FileSystemOperations.instance = new FileSystemOperations()
+  static validateFileName(name: string): { valid: boolean; error?: string } {
+    if (!name.trim()) {
+      return { valid: false, error: "Name cannot be empty" }
     }
-    return FileSystemOperations.instance
+
+    if (name.includes("/") || name.includes("\\")) {
+      return { valid: false, error: "Name cannot contain slashes" }
+    }
+
+    if (name.startsWith(".")) {
+      return { valid: false, error: "Name cannot start with a dot" }
+    }
+
+    return { valid: true }
   }
 
-  private loadState(): FSState {
-    try {
-      const saved = localStorage.getItem("neo.ide.fs.state")
-      if (saved) {
-        return JSON.parse(saved)
+  static isPathUnique(path: string, tree: FileNode[], excludePath?: string): boolean {
+    const allPaths = this.getAllPaths(tree)
+    return !allPaths.some((p) => p === path && p !== excludePath)
+  }
+
+  static getAllPaths(nodes: FileNode[]): string[] {
+    const paths: string[] = []
+
+    function traverse(node: FileNode) {
+      paths.push(node.path)
+      if (node.children) {
+        node.children.forEach(traverse)
       }
-    } catch (error) {
-      console.error("Failed to load FS state:", error)
     }
 
-    return {
-      tree: [],
-      openTabs: [],
-      activePath: null,
-      selection: [],
-      versions: {},
-    }
+    nodes.forEach(traverse)
+    return paths
   }
 
-  private saveState() {
-    try {
-      localStorage.setItem("neo.ide.fs.state", JSON.stringify(this.state))
-      this.notifyListeners()
-    } catch (error) {
-      console.error("Failed to save FS state:", error)
-    }
-  }
-
-  private notifyListeners() {
-    this.listeners.forEach((listener) => listener(this.state))
-  }
-
-  subscribe(listener: (state: FSState) => void) {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
-  }
-
-  getState(): FSState {
-    return { ...this.state }
-  }
-
-  createFile(parentPath: string, name: string, content = "", templateId?: string): boolean {
-    const newPath = `${parentPath}/${name}`
-
-    // Check if file already exists
-    if (this.findNodeByPath(newPath)) {
-      throw new Error(`File "${name}" already exists`)
+  static createFile(
+    tree: FileNode[],
+    parentPath: string,
+    name: string,
+    content = "",
+    language?: "js" | "ts" | "html" | "css" | "md",
+  ): { success: boolean; error?: string; newTree?: FileNode[] } {
+    const validation = this.validateFileName(name)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
     }
 
-    // Validate file name
-    if (!this.isValidFileName(name)) {
-      throw new Error("Invalid file name")
+    const newPath = parentPath === "/" ? `/${name}` : `${parentPath}/${name}`
+
+    if (!this.isPathUnique(newPath, tree)) {
+      return { success: false, error: "File already exists" }
     }
 
-    const language = this.getLanguageFromExtension(name)
+    const newTree = this.cloneTree(tree)
+    const parent = this.findNodeByPath(newTree, parentPath)
+
+    if (!parent || parent.type !== "folder") {
+      return { success: false, error: "Parent folder not found" }
+    }
+
     const newFile: FileNode = {
       type: "file",
       name,
       path: newPath,
       content,
       language,
-      meta: templateId ? { kind: "playground", templateId } : undefined,
-    }
-
-    // Add to parent folder
-    const parent = this.findNodeByPath(parentPath)
-    if (!parent || parent.type !== "folder") {
-      throw new Error("Parent folder not found")
+      meta: { kind: "playground" },
     }
 
     if (!parent.children) {
@@ -113,19 +100,30 @@ class FileSystemOperations {
       return a.name.localeCompare(b.name)
     })
 
-    this.saveState()
-    return true
+    return { success: true, newTree }
   }
 
-  createFolder(parentPath: string, name: string): boolean {
-    const newPath = `${parentPath}/${name}`
-
-    if (this.findNodeByPath(newPath)) {
-      throw new Error(`Folder "${name}" already exists`)
+  static createFolder(
+    tree: FileNode[],
+    parentPath: string,
+    name: string,
+  ): { success: boolean; error?: string; newTree?: FileNode[] } {
+    const validation = this.validateFileName(name)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
     }
 
-    if (!this.isValidFileName(name)) {
-      throw new Error("Invalid folder name")
+    const newPath = parentPath === "/" ? `/${name}` : `${parentPath}/${name}`
+
+    if (!this.isPathUnique(newPath, tree)) {
+      return { success: false, error: "Folder already exists" }
+    }
+
+    const newTree = this.cloneTree(tree)
+    const parent = this.findNodeByPath(newTree, parentPath)
+
+    if (!parent || parent.type !== "folder") {
+      return { success: false, error: "Parent folder not found" }
     }
 
     const newFolder: FileNode = {
@@ -133,11 +131,6 @@ class FileSystemOperations {
       name,
       path: newPath,
       children: [],
-    }
-
-    const parent = this.findNodeByPath(parentPath)
-    if (!parent || parent.type !== "folder") {
-      throw new Error("Parent folder not found")
     }
 
     if (!parent.children) {
@@ -151,130 +144,93 @@ class FileSystemOperations {
       return a.name.localeCompare(b.name)
     })
 
-    this.saveState()
-    return true
+    return { success: true, newTree }
   }
 
-  renameNode(path: string, newName: string): boolean {
-    const node = this.findNodeByPath(path)
+  static renameNode(
+    tree: FileNode[],
+    oldPath: string,
+    newName: string,
+  ): { success: boolean; error?: string; newTree?: FileNode[] } {
+    const validation = this.validateFileName(newName)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
+
+    const newTree = this.cloneTree(tree)
+    const node = this.findNodeByPath(newTree, oldPath)
+
     if (!node) {
-      throw new Error("File or folder not found")
+      return { success: false, error: "Node not found" }
     }
 
-    if (!this.isValidFileName(newName)) {
-      throw new Error("Invalid name")
+    const parentPath = oldPath.substring(0, oldPath.lastIndexOf("/")) || "/"
+    const newPath = parentPath === "/" ? `/${newName}` : `${parentPath}/${newName}`
+
+    if (!this.isPathUnique(newPath, newTree, oldPath)) {
+      return { success: false, error: "Name already exists" }
     }
 
-    const parentPath = path.substring(0, path.lastIndexOf("/"))
-    const newPath = `${parentPath}/${newName}`
-
-    if (newPath !== path && this.findNodeByPath(newPath)) {
-      throw new Error(`"${newName}" already exists`)
-    }
-
-    // Update node
-    const oldPath = node.path
+    // Update node and all descendants
+    this.updateNodePaths(node, oldPath, newPath)
     node.name = newName
-    node.path = newPath
 
-    // Update language if file extension changed
-    if (node.type === "file") {
-      node.language = this.getLanguageFromExtension(newName)
-    }
-
-    // Update children paths recursively
-    if (node.type === "folder") {
-      this.updateChildrenPaths(node, oldPath, newPath)
-    }
-
-    // Update tabs
-    this.state.openTabs = this.state.openTabs.map((tab) => ({
-      ...tab,
-      path: tab.path === oldPath ? newPath : tab.path,
-    }))
-
-    if (this.state.activePath === oldPath) {
-      this.state.activePath = newPath
-    }
-
-    // Update dirty tabs
-    if (this.state.dirtyTabs && this.state.dirtyTabs[oldPath]) {
-      this.state.dirtyTabs[newPath] = this.state.dirtyTabs[oldPath]
-      delete this.state.dirtyTabs[oldPath]
-    }
-
-    this.saveState()
-    return true
+    return { success: true, newTree }
   }
 
-  deleteNode(path: string): boolean {
-    const node = this.findNodeByPath(path)
-    if (!node) {
-      throw new Error("File or folder not found")
-    }
+  static deleteNode(tree: FileNode[], path: string): { success: boolean; error?: string; newTree?: FileNode[] } {
+    const newTree = this.cloneTree(tree)
+    const parentPath = path.substring(0, path.lastIndexOf("/")) || "/"
+    const parent = this.findNodeByPath(newTree, parentPath)
 
-    const parentPath = path.substring(0, path.lastIndexOf("/"))
-    const parent = this.findNodeByPath(parentPath)
     if (!parent || !parent.children) {
-      throw new Error("Parent folder not found")
+      return { success: false, error: "Parent not found" }
     }
 
-    // Remove from parent
-    parent.children = parent.children.filter((child) => child.path !== path)
-
-    // Close related tabs
-    this.state.openTabs = this.state.openTabs.filter((tab) => !tab.path.startsWith(path))
-
-    // Update active path if needed
-    if (this.state.activePath?.startsWith(path)) {
-      this.state.activePath = null
+    const nodeIndex = parent.children.findIndex((child) => child.path === path)
+    if (nodeIndex === -1) {
+      return { success: false, error: "Node not found" }
     }
 
-    // Remove from versions
-    Object.keys(this.state.versions).forEach((versionPath) => {
-      if (versionPath.startsWith(path)) {
-        delete this.state.versions[versionPath]
-      }
-    })
-
-    // Remove from dirty tabs
-    if (this.state.dirtyTabs) {
-      delete this.state.dirtyTabs[path]
-    }
-
-    this.saveState()
-    return true
+    parent.children.splice(nodeIndex, 1)
+    return { success: true, newTree }
   }
 
-  duplicateNode(path: string): boolean {
-    const node = this.findNodeByPath(path)
+  static duplicateNode(tree: FileNode[], path: string): { success: boolean; error?: string; newTree?: FileNode[] } {
+    const newTree = this.cloneTree(tree)
+    const node = this.findNodeByPath(newTree, path)
+
     if (!node) {
-      throw new Error("File or folder not found")
+      return { success: false, error: "Node not found" }
     }
 
-    const parentPath = path.substring(0, path.lastIndexOf("/"))
-    const baseName = node.name
-    const extension = node.type === "file" ? baseName.substring(baseName.lastIndexOf(".")) : ""
-    const nameWithoutExt = node.type === "file" ? baseName.substring(0, baseName.lastIndexOf(".")) : baseName
+    const parentPath = path.substring(0, path.lastIndexOf("/")) || "/"
+    const parent = this.findNodeByPath(newTree, parentPath)
 
-    // Find unique name
+    if (!parent || parent.type !== "folder") {
+      return { success: false, error: "Parent folder not found" }
+    }
+
+    // Generate unique name
+    let copyName = `${node.name} (2)`
     let counter = 2
-    let newName = node.type === "file" ? `${nameWithoutExt} (${counter})${extension}` : `${baseName} (${counter})`
+    let copyPath = parentPath === "/" ? `/${copyName}` : `${parentPath}/${copyName}`
 
-    while (this.findNodeByPath(`${parentPath}/${newName}`)) {
+    while (!this.isPathUnique(copyPath, newTree)) {
       counter++
-      newName = node.type === "file" ? `${nameWithoutExt} (${counter})${extension}` : `${baseName} (${counter})`
+      copyName = `${node.name} (${counter})`
+      copyPath = parentPath === "/" ? `/${copyName}` : `${parentPath}/${copyName}`
     }
 
-    // Create duplicate
-    const duplicate = this.cloneNode(node, `${parentPath}/${newName}`, newName)
+    // Clone the node and update paths
+    const clonedNode = this.cloneNode(node)
+    this.updateNodePaths(clonedNode, node.path, copyPath)
+    clonedNode.name = copyName
 
-    const parent = this.findNodeByPath(parentPath)
-    if (!parent || !parent.children) {
-      throw new Error("Parent folder not found")
+    if (!parent.children) {
+      parent.children = []
     }
-
-    parent.children.push(duplicate)
+    parent.children.push(clonedNode)
     parent.children.sort((a, b) => {
       if (a.type !== b.type) {
         return a.type === "folder" ? -1 : 1
@@ -282,196 +238,62 @@ class FileSystemOperations {
       return a.name.localeCompare(b.name)
     })
 
-    this.saveState()
-    return true
+    return { success: true, newTree }
   }
 
-  openFile(path: string, asPreview = true): void {
-    const existingTabIndex = this.state.openTabs.findIndex((tab) => tab.path === path)
-
-    if (existingTabIndex >= 0) {
-      // File already open, just activate it
-      this.state.activePath = path
-      if (!asPreview) {
-        // Pin the tab if opening as non-preview
-        this.state.openTabs[existingTabIndex].pinned = true
-        this.state.openTabs[existingTabIndex].isPreview = false
-      }
-    } else {
-      // Close existing preview tab if opening new preview
-      if (asPreview) {
-        const previewTabIndex = this.state.openTabs.findIndex((tab) => tab.isPreview && !tab.pinned)
-        if (previewTabIndex >= 0) {
-          this.state.openTabs.splice(previewTabIndex, 1)
-        }
-      }
-
-      // Create new tab
-      const newTab: Tab = {
-        path,
-        pane: 1,
-        pinned: !asPreview,
-        isPreview: asPreview,
-      }
-
-      this.state.openTabs.push(newTab)
-      this.state.activePath = path
-    }
-
-    this.saveState()
+  private static cloneTree(tree: FileNode[]): FileNode[] {
+    return tree.map((node) => this.cloneNode(node))
   }
 
-  pinTab(path: string): void {
-    const tab = this.state.openTabs.find((tab) => tab.path === path)
-    if (tab) {
-      tab.pinned = true
-      tab.isPreview = false
-      this.saveState()
-    }
-  }
-
-  closeTab(path: string): void {
-    this.state.openTabs = this.state.openTabs.filter((tab) => tab.path !== path)
-
-    if (this.state.activePath === path) {
-      // Set new active tab
-      const remainingTabs = this.state.openTabs
-      this.state.activePath = remainingTabs.length > 0 ? remainingTabs[remainingTabs.length - 1].path : null
-    }
-
-    // Remove from dirty tabs
-    if (this.state.dirtyTabs) {
-      delete this.state.dirtyTabs[path]
-    }
-
-    this.saveState()
-  }
-
-  updateState(newState: Partial<FSState>): void {
-    this.state = { ...this.state, ...newState }
-    this.saveState()
-  }
-
-  markTabDirty(path: string, isDirty: boolean): void {
-    const tab = this.state.openTabs.find((tab) => tab.path === path)
-    if (tab) {
-      // Store dirty state in a separate map since Tab interface doesn't have dirty field
-      if (!this.state.dirtyTabs) {
-        this.state.dirtyTabs = {}
-      }
-      this.state.dirtyTabs[path] = isDirty
-      this.saveState()
-    }
-  }
-
-  getDirtyState(path: string): boolean {
-    return this.state.dirtyTabs?.[path] || false
-  }
-
-  saveFileContent(path: string, content: string): void {
-    // Save to versions history
-    if (!this.state.versions[path]) {
-      this.state.versions[path] = []
-    }
-
-    const versions = this.state.versions[path]
-    const lastVersion = versions[versions.length - 1]
-
-    // Only save if content has changed
-    if (!lastVersion || lastVersion.content !== content) {
-      versions.push({
-        ts: Date.now(),
-        content,
-      })
-
-      // Keep only last 10 versions
-      if (versions.length > 10) {
-        versions.splice(0, versions.length - 10)
-      }
-
-      this.state.versions[path] = versions
-    }
-
-    // Mark tab as clean after save
-    this.markTabDirty(path, false)
-    this.saveState()
-  }
-
-  getFileContent(path: string): string | null {
-    const versions = this.state.versions[path]
-    if (versions && versions.length > 0) {
-      return versions[versions.length - 1].content
-    }
-    return null
-  }
-
-  private findNodeByPath(path: string, nodes: FileNode[] = this.state.tree): FileNode | null {
-    for (const node of nodes) {
-      if (node.path === path) {
-        return node
-      }
-      if (node.children) {
-        const found = this.findNodeByPath(path, node.children)
-        if (found) return found
-      }
-    }
-    return null
-  }
-
-  private updateChildrenPaths(node: FileNode, oldBasePath: string, newBasePath: string): void {
-    if (node.children) {
-      for (const child of node.children) {
-        child.path = child.path.replace(oldBasePath, newBasePath)
-        if (child.type === "folder") {
-          this.updateChildrenPaths(child, oldBasePath, newBasePath)
-        }
-      }
-    }
-  }
-
-  private cloneNode(node: FileNode, newPath: string, newName: string): FileNode {
-    const clone: FileNode = {
+  private static cloneNode(node: FileNode): FileNode {
+    return {
       ...node,
-      path: newPath,
-      name: newName,
+      children: node.children ? node.children.map((child) => this.cloneNode(child)) : undefined,
     }
+  }
+
+  private static findNodeByPath(tree: FileNode[], path: string): FileNode | null {
+    function search(nodes: FileNode[]): FileNode | null {
+      for (const node of nodes) {
+        if (node.path === path) return node
+        if (node.children) {
+          const found = search(node.children)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    return search(tree)
+  }
+
+  private static updateNodePaths(node: FileNode, oldPath: string, newPath: string): void {
+    node.path = newPath
 
     if (node.children) {
-      clone.children = node.children.map((child) => {
-        const childNewPath = `${newPath}/${child.name}`
-        return this.cloneNode(child, childNewPath, child.name)
+      node.children.forEach((child) => {
+        const childOldPath = child.path
+        const childNewPath = childOldPath.replace(oldPath, newPath)
+        this.updateNodePaths(child, childOldPath, childNewPath)
       })
     }
-
-    return clone
   }
 
-  private isValidFileName(name: string): boolean {
-    if (!name || name.trim() === "") return false
-    if (name.includes("/") || name.includes("\\")) return false
-    if (name === "." || name === "..") return false
-    return true
+  static saveToStorage(tree: FileNode[]): void {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tree))
+    } catch (error) {
+      console.warn("Failed to save tree to localStorage:", error)
+    }
   }
 
-  private getLanguageFromExtension(filename: string): FileNode["language"] {
-    const ext = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase()
-    switch (ext) {
-      case "js":
-        return "js"
-      case "ts":
-        return "ts"
-      case "html":
-        return "html"
-      case "css":
-        return "css"
-      case "md":
-        return "md"
-      case "json":
-        return "json"
-      default:
-        return undefined
+  static loadFromStorage(): FileNode[] | null {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY)
+      return stored ? JSON.parse(stored) : null
+    } catch (error) {
+      console.warn("Failed to load tree from localStorage:", error)
+      return null
     }
   }
 }
-
-export const fsOperations = FileSystemOperations.getInstance()

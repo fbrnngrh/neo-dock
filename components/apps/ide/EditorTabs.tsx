@@ -6,8 +6,8 @@ export interface EditorTab {
   path: string
   title: string
   dirty: boolean
-  pinned?: boolean
-  isPreview?: boolean
+  pinned: boolean
+  isPreview: boolean
 }
 
 interface EditorTabsProps {
@@ -15,7 +15,7 @@ interface EditorTabsProps {
   activeTab?: string
   onTabSelect: (path: string) => void
   onTabClose: (path: string) => void
-  onTabPin?: (path: string) => void
+  onTabPin: (path: string) => void
 }
 
 export function EditorTabs({ tabs, activeTab, onTabSelect, onTabClose, onTabPin }: EditorTabsProps) {
@@ -34,16 +34,17 @@ export function EditorTabs({ tabs, activeTab, onTabSelect, onTabClose, onTabPin 
           key={tab.path}
           className={`flex items-center gap-2 px-3 py-2 border-r-2 border-neo-fg cursor-pointer hover:bg-neo-bg3 ${
             activeTab === tab.path ? "bg-neo-bg" : ""
-          } ${tab.isPreview && !tab.pinned ? "italic opacity-75" : ""}`}
+          } ${tab.isPreview ? "italic opacity-75" : ""}`}
           onClick={() => onTabSelect(tab.path)}
-          onDoubleClick={() => onTabPin?.(tab.path)}
+          onDoubleClick={() => onTabPin(tab.path)}
         >
           {tab.pinned && <Pin className="w-3 h-3 text-neo-fg" />}
+
           <span className="text-sm font-medium text-neo-fg whitespace-nowrap">
             {tab.title}
             {tab.dirty && "*"}
-            {tab.isPreview && !tab.pinned && " (Preview)"}
           </span>
+
           <button
             className="w-4 h-4 flex items-center justify-center hover:bg-neo-fg hover:text-neo-bg rounded-sm"
             onClick={(e) => {

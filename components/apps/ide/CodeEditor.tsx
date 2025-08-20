@@ -8,7 +8,6 @@ import type { FileNode } from "@/data/files"
 import { runnerRouter } from "@/lib/runner/Router"
 import { PlaygroundStorage } from "@/lib/storage/PlaygroundStorage"
 import { IframeRunner } from "@/lib/runner/IframeRunner"
-import { fsOperations } from "@/lib/fsOperations"
 
 interface CodeEditorProps {
   file: FileNode
@@ -24,12 +23,10 @@ export function CodeEditor({ file, onContentChange, onRunResult, relatedFiles }:
   const [iframeData, setIframeData] = useState<any>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
-  const blurSaveTimeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
-    const fsContent = fsOperations.getFileContent(file.path)
-    const savedContent = fsContent || PlaygroundStorage.loadFile(file.path)
-
+    // Load saved content from localStorage
+    const savedContent = PlaygroundStorage.loadFile(file.path)
     if (savedContent !== null) {
       setContent(savedContent)
       onContentChange?.(savedContent)
@@ -37,20 +34,19 @@ export function CodeEditor({ file, onContentChange, onRunResult, relatedFiles }:
       setContent(file.content || "")
     }
 
+    // Determine runner mode
     const mode = runnerRouter.getRunnerMode(file)
     setRunnerMode(mode)
   }, [file])
 
   useEffect(() => {
+    // Auto-save with debounce
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
     }
 
-    fsOperations.markTabDirty(file.path, true)
-
     saveTimeoutRef.current = setTimeout(() => {
       PlaygroundStorage.saveFile(file.path, content)
-      fsOperations.saveFileContent(file.path, content)
     }, 1000)
 
     return () => {
@@ -79,6 +75,7 @@ export function CodeEditor({ file, onContentChange, onRunResult, relatedFiles }:
 
     setIsRunning(true)
     try {
+      // Create updated file object with current content
       const updatedFile = { ...file, content }
       const updatedRelatedFiles = relatedFiles?.map((f) => {
         const savedContent = PlaygroundStorage.loadFile(f.path)
@@ -111,33 +108,29 @@ export function CodeEditor({ file, onContentChange, onRunResult, relatedFiles }:
   }
 
   const handleSave = () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
-    }
-    if (blurSaveTimeoutRef.current) {
-      clearTimeout(blurSaveTimeoutRef.current)
-    }
-
     PlaygroundStorage.saveFile(file.path, content)
-    fsOperations.saveFileContent(file.path, content)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Cmd/Ctrl + Enter to run
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault()
       handleRun()
     }
 
+    // Cmd/Ctrl + S to save
     if ((e.metaKey || e.ctrlKey) && e.key === "s") {
       e.preventDefault()
       handleSave()
     }
 
+    // Shift + Esc to stop
     if (e.shiftKey && e.key === "Escape") {
       e.preventDefault()
       handleStop()
     }
 
+    // Tab handling
     if (e.key === "Tab") {
       e.preventDefault()
       const textarea = textareaRef.current
@@ -150,21 +143,11 @@ export function CodeEditor({ file, onContentChange, onRunResult, relatedFiles }:
       setContent(newContent)
       onContentChange?.(newContent)
 
+      // Set cursor position after the inserted spaces
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2
       }, 0)
     }
-  }
-
-  const handleBlur = () => {
-    if (blurSaveTimeoutRef.current) {
-      clearTimeout(blurSaveTimeoutRef.current)
-    }
-
-    blurSaveTimeoutRef.current = setTimeout(() => {
-      PlaygroundStorage.saveFile(file.path, content)
-      fsOperations.saveFileContent(file.path, content)
-    }, 100)
   }
 
   const getLanguageLabel = () => {
@@ -184,6 +167,7 @@ export function CodeEditor({ file, onContentChange, onRunResult, relatedFiles }:
 
   return (
     <div className="flex-1 flex flex-col bg-neo-bg">
+      {/* Toolbar */}
       <div className="h-10 bg-neo-bg2 border-b-2 border-neo-fg flex items-center justify-between px-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-neo-fg">{getLanguageLabel()}</span>
@@ -219,20 +203,22 @@ export function CodeEditor({ file, onContentChange, onRunResult, relatedFiles }:
         </div>
       </div>
 
+      {/* Editor Content */}
       <div className="flex-1 flex">
+        {/* Code Editor */}
         <div className="flex-1 flex flex-col">
           <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
             className="flex-1 p-4 bg-neo-bg text-neo-fg font-mono text-sm resize-none outline-none border-0"
             placeholder={`Enter your ${getLanguageLabel()} code here...`}
             spellCheck={false}
           />
         </div>
 
+        {/* Preview Panel for HTML mode */}
         {runnerMode === "iframe" && iframeData && (
           <div className="w-1/2 border-l-2 border-neo-fg">
             <div className="h-8 bg-neo-bg2 border-b-2 border-neo-fg flex items-center px-3">
