@@ -2,43 +2,51 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import {
-  ChevronRight,
-  ChevronDown,
-  File,
-  Folder,
-  FolderOpen,
-  Plus,
-  FolderPlus,
-  Edit3,
-  Trash2,
-  Copy,
-} from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus } from "lucide-react"
 import type { FileNode } from "@/data/files"
-import { FSOperations } from "@/lib/fs/operations"
+import { FileSystemOperations, type FSState } from "@/lib/fs/operations"
 
 interface ExplorerTreeProps {
-  tree: FileNode[]
-  onTreeChange: (newTree: FileNode[]) => void
   onFileSelect: (file: FileNode) => void
   selectedPath?: string
-  selection: string[]
-  onSelectionChange: (selection: string[]) => void
+  onStateChange?: (state: Partial<FSState>) => void
 }
 
-export function ExplorerTree({
-  tree,
-  onTreeChange,
-  onFileSelect,
-  selectedPath,
-  selection,
-  onSelectionChange,
-}: ExplorerTreeProps) {
+export function ExplorerTree({ onFileSelect, selectedPath, onStateChange }: ExplorerTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["/"]))
+  const [tree, setTree] = useState<FileNode[]>([])
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string } | null>(null)
   const [renamingPath, setRenamingPath] = useState<string | null>(null)
   const [newName, setNewName] = useState("")
+  const renameInputRef = useRef<HTMLInputElement>(null)
+
+  // Load initial tree from localStorage or use default
+  useEffect(() => {
+    const state = FileSystemOperations.loadState()
+    if (state.tree.length > 0) {
+      setTree(state.tree)
+    } else {
+      // Initialize with default tree structure
+      const defaultTree: FileNode[] = [
+        {
+          type: "folder",
+          name: "Playground",
+          path: "/Playground",
+          children: [],
+        },
+      ]
+      setTree(defaultTree)
+      FileSystemOperations.saveState({ tree: defaultTree })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (renamingPath && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingPath])
 
   const toggleFolder = (path: string) => {
     const newExpanded = new Set(expandedFolders)
@@ -56,34 +64,44 @@ export function ExplorerTree({
     setContextMenu({ x: e.clientX, y: e.clientY, path })
   }
 
-  const closeContextMenu = () => {
+  const handleNewFile = (parentPath: string) => {
+    try {
+      const newTree = FileSystemOperations.createFile(tree, parentPath, "untitled.js")
+      setTree(newTree)
+      FileSystemOperations.saveState({ tree: newTree })
+      onStateChange?.({ tree: newTree })
+
+      // Start renaming the new file
+      const newFilePath = `${parentPath}/untitled.js`.replace(/\/+/g, "/")
+      setRenamingPath(newFilePath)
+      setNewName("untitled.js")
+
+      // Expand parent folder
+      setExpandedFolders((prev) => new Set([...prev, parentPath]))
+    } catch (error) {
+      console.error("Failed to create file:", error)
+    }
     setContextMenu(null)
   }
 
-  const handleNewFile = (parentPath: string) => {
-    const result = FSOperations.createFile(tree, parentPath, "untitled.js", "", "js")
-    if (result.success && result.newTree) {
-      onTreeChange(result.newTree)
-      const newFilePath = parentPath === "/" ? "/untitled.js" : `${parentPath}/untitled.js`
-      setRenamingPath(newFilePath)
-      setNewName("untitled.js")
-    } else {
-      alert(result.error)
-    }
-    closeContextMenu()
-  }
-
   const handleNewFolder = (parentPath: string) => {
-    const result = FSOperations.createFolder(tree, parentPath, "New Folder")
-    if (result.success && result.newTree) {
-      onTreeChange(result.newTree)
-      const newFolderPath = parentPath === "/" ? "/New Folder" : `${parentPath}/New Folder`
+    try {
+      const newTree = FileSystemOperations.createFolder(tree, parentPath, "New Folder")
+      setTree(newTree)
+      FileSystemOperations.saveState({ tree: newTree })
+      onStateChange?.({ tree: newTree })
+
+      // Start renaming the new folder
+      const newFolderPath = `${parentPath}/New Folder`.replace(/\/+/g, "/")
       setRenamingPath(newFolderPath)
       setNewName("New Folder")
-    } else {
-      alert(result.error)
+
+      // Expand parent folder
+      setExpandedFolders((prev) => new Set([...prev, parentPath]))
+    } catch (error) {
+      console.error("Failed to create folder:", error)
     }
-    closeContextMenu()
+    setContextMenu(null)
   }
 
   const handleRename = (path: string) => {
@@ -92,80 +110,55 @@ export function ExplorerTree({
       setRenamingPath(path)
       setNewName(node.name)
     }
-    closeContextMenu()
+    setContextMenu(null)
   }
 
   const handleDelete = (path: string) => {
-    const node = findNodeInTree(tree, path)
-    if (!node) return
-
-    const itemCount = node.type === "folder" ? countItems(node) : 1
-    const message = itemCount > 1 ? `Delete ${node.name} and ${itemCount - 1} items inside it?` : `Delete ${node.name}?`
-
-    if (confirm(message)) {
-      const result = FSOperations.deleteNode(tree, path)
-      if (result.success && result.newTree) {
-        onTreeChange(result.newTree)
-        // Remove from selection if selected
-        onSelectionChange(selection.filter((p) => p !== path))
-      } else {
-        alert(result.error)
+    if (confirm("Are you sure you want to delete this item?")) {
+      try {
+        const newTree = FileSystemOperations.deleteNode(tree, path)
+        setTree(newTree)
+        FileSystemOperations.saveState({ tree: newTree })
+        onStateChange?.({ tree: newTree })
+      } catch (error) {
+        console.error("Failed to delete:", error)
       }
     }
-    closeContextMenu()
+    setContextMenu(null)
   }
 
   const handleDuplicate = (path: string) => {
-    const result = FSOperations.duplicateNode(tree, path)
-    if (result.success && result.newTree) {
-      onTreeChange(result.newTree)
-    } else {
-      alert(result.error)
+    try {
+      const newTree = FileSystemOperations.duplicateNode(tree, path)
+      setTree(newTree)
+      FileSystemOperations.saveState({ tree: newTree })
+      onStateChange?.({ tree: newTree })
+    } catch (error) {
+      console.error("Failed to duplicate:", error)
     }
-    closeContextMenu()
+    setContextMenu(null)
   }
 
-  const handleRenameSubmit = () => {
-    if (!renamingPath) return
+  const confirmRename = () => {
+    if (!renamingPath || !newName.trim()) return
 
-    const result = FSOperations.renameNode(tree, renamingPath, newName)
-    if (result.success && result.newTree) {
-      onTreeChange(result.newTree)
-    } else {
-      alert(result.error)
+    try {
+      const newTree = FileSystemOperations.renameNode(tree, renamingPath, newName.trim())
+      setTree(newTree)
+      FileSystemOperations.saveState({ tree: newTree })
+      onStateChange?.({ tree: newTree })
+    } catch (error) {
+      console.error("Failed to rename:", error)
+      alert(error instanceof Error ? error.message : "Failed to rename")
     }
 
     setRenamingPath(null)
     setNewName("")
   }
 
-  const handleRenameCancel = () => {
+  const cancelRename = () => {
     setRenamingPath(null)
     setNewName("")
-  }
-
-  const handleNodeClick = (node: FileNode, e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      // Multi-select
-      const newSelection = selection.includes(node.path)
-        ? selection.filter((p) => p !== node.path)
-        : [...selection, node.path]
-      onSelectionChange(newSelection)
-    } else if (e.shiftKey && selection.length > 0) {
-      // Range select - simplified implementation
-      const lastSelected = selection[selection.length - 1]
-      const allPaths = FSOperations.getAllPaths(tree)
-      const start = allPaths.indexOf(lastSelected)
-      const end = allPaths.indexOf(node.path)
-      const range = allPaths.slice(Math.min(start, end), Math.max(start, end) + 1)
-      onSelectionChange(range)
-    } else {
-      // Single select
-      onSelectionChange([node.path])
-      if (node.type === "file") {
-        onFileSelect(node)
-      }
-    }
   }
 
   const findNodeInTree = (nodes: FileNode[], path: string): FileNode | null => {
@@ -179,18 +172,9 @@ export function ExplorerTree({
     return null
   }
 
-  const countItems = (node: FileNode): number => {
-    let count = 1
-    if (node.children) {
-      count += node.children.reduce((sum, child) => sum + countItems(child), 0)
-    }
-    return count
-  }
-
   const renderNode = (node: FileNode, depth = 0) => {
     const isExpanded = expandedFolders.has(node.path)
     const isSelected = selectedPath === node.path
-    const isInSelection = selection.includes(node.path)
     const isRenaming = renamingPath === node.path
     const paddingLeft = depth * 16
 
@@ -199,13 +183,14 @@ export function ExplorerTree({
         <div
           className={`flex items-center gap-1 px-2 py-1 cursor-pointer hover:bg-neo-bg2 ${
             isSelected ? "bg-neo-bg3 border-l-2 border-neo-fg" : ""
-          } ${isInSelection ? "bg-neo-bg2" : ""}`}
+          }`}
           style={{ paddingLeft: paddingLeft + 8 }}
-          onClick={(e) => {
-            if (node.type === "folder" && !isRenaming) {
+          onClick={() => {
+            if (node.type === "folder") {
               toggleFolder(node.path)
+            } else {
+              onFileSelect(node)
             }
-            handleNodeClick(node, e)
           }}
           onContextMenu={(e) => handleContextMenu(e, node.path)}
         >
@@ -227,25 +212,17 @@ export function ExplorerTree({
 
           {isRenaming ? (
             <input
+              ref={renameInputRef}
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              onBlur={handleRenameSubmit}
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameSubmit()
-                if (e.key === "Escape") handleRenameCancel()
+                if (e.key === "Enter") confirmRename()
+                if (e.key === "Escape") cancelRename()
               }}
-              className="flex-1 bg-neo-bg border border-neo-fg px-1 text-sm font-medium text-neo-fg"
-              autoFocus
-              onFocus={(e) => {
-                // Select name without extension
-                const dotIndex = e.target.value.lastIndexOf(".")
-                if (dotIndex > 0) {
-                  e.target.setSelectionRange(0, dotIndex)
-                } else {
-                  e.target.select()
-                }
-              }}
+              onBlur={confirmRename}
+              className="text-sm font-medium text-neo-fg bg-neo-bg border border-neo-fg px-1 flex-1"
+              onClick={(e) => e.stopPropagation()}
             />
           ) : (
             <span className="text-sm font-medium text-neo-fg truncate">{node.name}</span>
@@ -261,83 +238,76 @@ export function ExplorerTree({
     )
   }
 
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null)
+    if (contextMenu) {
+      document.addEventListener("click", handleClickOutside)
+      return () => document.removeEventListener("click", handleClickOutside)
+    }
+  }, [contextMenu])
+
   return (
-    <>
-      <div className="h-full bg-neo-bg border-r-2 border-neo-fg">
-        <div className="px-3 py-2 border-b-2 border-neo-fg flex items-center justify-between">
-          <h3 className="text-sm font-bold text-neo-fg uppercase tracking-wider">Explorer</h3>
-          <div className="flex gap-1">
-            <button
-              onClick={() => handleNewFile("/")}
-              className="w-6 h-6 flex items-center justify-center hover:bg-neo-bg2 border border-neo-fg"
-              title="New File"
-            >
-              <Plus className="w-3 h-3 text-neo-fg" />
-            </button>
-            <button
-              onClick={() => handleNewFolder("/")}
-              className="w-6 h-6 flex items-center justify-center hover:bg-neo-bg2 border border-neo-fg"
-              title="New Folder"
-            >
-              <FolderPlus className="w-3 h-3 text-neo-fg" />
-            </button>
-          </div>
+    <div className="h-full bg-neo-bg border-r-2 border-neo-fg">
+      <div className="px-3 py-2 border-b-2 border-neo-fg flex items-center justify-between">
+        <h3 className="text-sm font-bold text-neo-fg uppercase tracking-wider">Explorer</h3>
+        <div className="flex gap-1">
+          <button
+            onClick={() => handleNewFile("/Playground")}
+            className="w-6 h-6 flex items-center justify-center hover:bg-neo-bg2 border border-neo-fg"
+            title="New File"
+          >
+            <Plus className="w-3 h-3 text-neo-fg" />
+          </button>
+          <button
+            onClick={() => handleNewFolder("/Playground")}
+            className="w-6 h-6 flex items-center justify-center hover:bg-neo-bg2 border border-neo-fg"
+            title="New Folder"
+          >
+            <Folder className="w-3 h-3 text-neo-fg" />
+          </button>
         </div>
-        <div className="overflow-y-auto">{tree.map((node) => renderNode(node))}</div>
       </div>
 
+      <div className="overflow-y-auto">{tree.map((node) => renderNode(node))}</div>
+
       {contextMenu && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={closeContextMenu} />
-          <div
-            className="fixed z-50 bg-neo-bg border-2 border-neo-fg shadow-neo min-w-[160px]"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
-            role="menu"
+        <div
+          className="fixed bg-neo-bg border-2 border-neo-fg shadow-neo z-50 py-1"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={() => handleNewFile(contextMenu.path)}
+            className="w-full px-3 py-1 text-left text-sm text-neo-fg hover:bg-neo-bg2"
           >
-            <button
-              className="w-full px-3 py-2 text-left text-sm text-neo-fg hover:bg-neo-bg2 flex items-center gap-2"
-              onClick={() => handleNewFile(contextMenu.path)}
-              role="menuitem"
-            >
-              <Plus className="w-4 h-4" />
-              New File
-            </button>
-            <button
-              className="w-full px-3 py-2 text-left text-sm text-neo-fg hover:bg-neo-bg2 flex items-center gap-2"
-              onClick={() => handleNewFolder(contextMenu.path)}
-              role="menuitem"
-            >
-              <FolderPlus className="w-4 h-4" />
-              New Folder
-            </button>
-            <hr className="border-neo-fg" />
-            <button
-              className="w-full px-3 py-2 text-left text-sm text-neo-fg hover:bg-neo-bg2 flex items-center gap-2"
-              onClick={() => handleRename(contextMenu.path)}
-              role="menuitem"
-            >
-              <Edit3 className="w-4 h-4" />
-              Rename
-            </button>
-            <button
-              className="w-full px-3 py-2 text-left text-sm text-neo-fg hover:bg-neo-bg2 flex items-center gap-2"
-              onClick={() => handleDuplicate(contextMenu.path)}
-              role="menuitem"
-            >
-              <Copy className="w-4 h-4" />
-              Duplicate
-            </button>
-            <button
-              className="w-full px-3 py-2 text-left text-sm text-neo-fg hover:bg-neo-bg2 flex items-center gap-2"
-              onClick={() => handleDelete(contextMenu.path)}
-              role="menuitem"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </button>
-          </div>
-        </>
+            New File
+          </button>
+          <button
+            onClick={() => handleNewFolder(contextMenu.path)}
+            className="w-full px-3 py-1 text-left text-sm text-neo-fg hover:bg-neo-bg2"
+          >
+            New Folder
+          </button>
+          <hr className="border-neo-fg my-1" />
+          <button
+            onClick={() => handleRename(contextMenu.path)}
+            className="w-full px-3 py-1 text-left text-sm text-neo-fg hover:bg-neo-bg2"
+          >
+            Rename
+          </button>
+          <button
+            onClick={() => handleDuplicate(contextMenu.path)}
+            className="w-full px-3 py-1 text-left text-sm text-neo-fg hover:bg-neo-bg2"
+          >
+            Duplicate
+          </button>
+          <button
+            onClick={() => handleDelete(contextMenu.path)}
+            className="w-full px-3 py-1 text-left text-sm text-neo-fg hover:bg-neo-bg2"
+          >
+            Delete
+          </button>
+        </div>
       )}
-    </>
+    </div>
   )
 }

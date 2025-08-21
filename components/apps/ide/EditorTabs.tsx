@@ -6,8 +6,8 @@ export interface EditorTab {
   path: string
   title: string
   dirty: boolean
-  pinned: boolean
-  isPreview: boolean
+  pinned: boolean // Added pinned state
+  isPreview: boolean // Added preview state
 }
 
 interface EditorTabsProps {
@@ -15,7 +15,7 @@ interface EditorTabsProps {
   activeTab?: string
   onTabSelect: (path: string) => void
   onTabClose: (path: string) => void
-  onTabPin: (path: string) => void
+  onTabPin?: (path: string) => void // Added pin handler
 }
 
 export function EditorTabs({ tabs, activeTab, onTabSelect, onTabClose, onTabPin }: EditorTabsProps) {
@@ -34,13 +34,17 @@ export function EditorTabs({ tabs, activeTab, onTabSelect, onTabClose, onTabPin 
           key={tab.path}
           className={`flex items-center gap-2 px-3 py-2 border-r-2 border-neo-fg cursor-pointer hover:bg-neo-bg3 ${
             activeTab === tab.path ? "bg-neo-bg" : ""
-          } ${tab.isPreview ? "italic opacity-75" : ""}`}
+          }`}
           onClick={() => onTabSelect(tab.path)}
-          onDoubleClick={() => onTabPin(tab.path)}
+          onDoubleClick={() => onTabPin?.(tab.path)} // Double-click to pin
         >
           {tab.pinned && <Pin className="w-3 h-3 text-neo-fg" />}
 
-          <span className="text-sm font-medium text-neo-fg whitespace-nowrap">
+          <span
+            className={`text-sm font-medium text-neo-fg whitespace-nowrap ${
+              tab.isPreview ? "italic opacity-75" : "" // Preview tabs are italic
+            }`}
+          >
             {tab.title}
             {tab.dirty && "*"}
           </span>
