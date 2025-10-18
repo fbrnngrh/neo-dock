@@ -13,68 +13,101 @@ interface AppIconProps {
 }
 
 const LineArtIcon = ({ type }: { type: string }) => {
-  const iconProps = {
-    width: 32,
-    height: 32,
-    stroke: "currentColor",
-    fill: "none",
-    strokeWidth: 2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  }
-
   switch (type) {
     case "about":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#3B82F6" />
+          <circle cx="24" cy="18" r="6" fill="white" />
+          <path
+            d="M14 36C14 31.5817 17.5817 28 22 28H26C30.4183 28 34 31.5817 34 36V38H14V36Z"
+            fill="white"
+          />
         </svg>
       )
     case "projects":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
-          <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-          <circle cx="9" cy="9" r="2" />
-          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#8B5CF6" />
+          <rect x="10" y="10" width="28" height="28" rx="3" fill="white" fillOpacity="0.2" />
+          <path
+            d="M10 16C10 12.6863 12.6863 10 16 10H32C35.3137 10 38 12.6863 38 16V18H10V16Z"
+            fill="white"
+            fillOpacity="0.3"
+          />
+          <circle cx="15" cy="14" r="1.5" fill="white" />
+          <circle cx="20" cy="14" r="1.5" fill="white" />
+          <circle cx="25" cy="14" r="1.5" fill="white" />
+          <path
+            d="M18 26L22 30L30 22"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       )
     case "skills":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12,6 12,12 16,14" />
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#F59E0B" />
+          <path
+            d="M24 8L27.708 19.292L39 23L27.708 26.708L24 38L20.292 26.708L9 23L20.292 19.292L24 8Z"
+            fill="white"
+          />
+          <circle cx="34" cy="14" r="3" fill="white" fillOpacity="0.7" />
+          <circle cx="14" cy="34" r="2.5" fill="white" fillOpacity="0.7" />
         </svg>
       )
     case "contact":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14,2 14,8 20,8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10,9 9,9 8,9" />
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#EF4444" />
+          <rect x="10" y="14" width="28" height="20" rx="2" fill="white" />
+          <path d="M10 16L24 26L38 16" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M10 32L17 25" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
+          <path d="M38 32L31 25" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
         </svg>
       )
     case "ide":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
-          <rect width="18" height="10" x="3" y="11" rx="2" />
-          <circle cx="12" cy="5" r="2" />
-          <path d="m12 7-2 4h4l-2-4Z" />
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#06B6D4" />
+          <rect x="10" y="10" width="28" height="28" rx="2" fill="white" fillOpacity="0.15" />
+          <rect x="10" y="10" width="28" height="6" rx="2" fill="white" fillOpacity="0.25" />
+          <circle cx="14" cy="13" r="1" fill="white" />
+          <circle cx="17.5" cy="13" r="1" fill="white" />
+          <circle cx="21" cy="13" r="1" fill="white" />
+          <path
+            d="M16 24L20 28L16 32"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <line x1="23" y1="32" x2="28" y2="32" stroke="white" strokeWidth="2" strokeLinecap="round" />
         </svg>
       )
     case "terminal":
       return (
-        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
-          <polyline points="4,17 10,11 4,5" />
-          <line x1="12" y1="19" x2="20" y2="19" />
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#10B981" />
+          <rect x="10" y="12" width="28" height="24" rx="2" fill="#1F2937" />
+          <path
+            d="M15 20L19 24L15 28"
+            stroke="#10B981"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <line x1="22" y1="28" x2="29" y2="28" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
       )
     default:
       return (
-        <svg {...iconProps} viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#6B7280" />
+          <circle cx="24" cy="24" r="8" stroke="white" strokeWidth="2" />
         </svg>
       )
   }
