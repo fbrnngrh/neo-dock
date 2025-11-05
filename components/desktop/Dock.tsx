@@ -16,107 +16,170 @@ const AppIcon = ({ type }: { type: string }) => {
     case "about":
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#3b82f6" />
-          <circle cx="24" cy="18" r="6" fill="white" />
+          <defs>
+            <linearGradient id="dockAboutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#60a5fa" />
+              <stop offset="100%" stopColor="#3b82f6" />
+            </linearGradient>
+            <filter id="dockShadow">
+              <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.25"/>
+            </filter>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockAboutGrad)" filter="url(#dockShadow)"/>
+          <circle cx="24" cy="17" r="5.5" fill="white" opacity="0.95"/>
           <path
-            d="M14 36C14 31.5817 17.5817 28 22 28H26C30.4183 28 34 31.5817 34 36V38H14V36Z"
+            d="M14 37C14 32.5817 17.5817 29 22 29H26C30.4183 29 34 32.5817 34 37V38H14V37Z"
             fill="white"
+            opacity="0.95"
           />
         </svg>
       )
     case "projects":
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#9333ea" />
-          <rect x="10" y="10" width="28" height="28" rx="3" fill="white" fillOpacity="0.2" />
+          <defs>
+            <linearGradient id="dockProjectsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#7e22ce" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockProjectsGrad)" filter="url(#dockShadow)"/>
+          <rect x="11" y="11" width="26" height="26" rx="3" fill="white" fillOpacity="0.15" />
           <path
-            d="M10 16C10 12.6863 12.6863 10 16 10H32C35.3137 10 38 12.6863 38 16V18H10V16Z"
+            d="M11 17C11 13.6863 13.6863 11 17 11H31C34.3137 11 37 13.6863 37 17V18H11V17Z"
             fill="white"
-            fillOpacity="0.3"
+            fillOpacity="0.25"
           />
-          <circle cx="15" cy="14" r="1.5" fill="white" />
-          <circle cx="20" cy="14" r="1.5" fill="white" />
-          <circle cx="25" cy="14" r="1.5" fill="white" />
+          <circle cx="15" cy="14.5" r="1.2" fill="white" opacity="0.9"/>
+          <circle cx="19" cy="14.5" r="1.2" fill="white" opacity="0.9"/>
+          <circle cx="23" cy="14.5" r="1.2" fill="white" opacity="0.9"/>
           <path
-            d="M18 26L22 30L30 22"
+            d="M18 27L22 31L30 23"
             stroke="white"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            opacity="0.95"
           />
         </svg>
       )
     case "skills":
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#f97316" />
+          <defs>
+            <linearGradient id="dockSkillsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fb923c" />
+              <stop offset="100%" stopColor="#ea580c" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockSkillsGrad)" filter="url(#dockShadow)"/>
           <path
-            d="M24 8L27.708 19.292L39 23L27.708 26.708L24 38L20.292 26.708L9 23L20.292 19.292L24 8Z"
+            d="M24 9L27.708 19.292L38 23L27.708 26.708L24 37L20.292 26.708L10 23L20.292 19.292L24 9Z"
             fill="white"
+            opacity="0.95"
           />
-          <circle cx="34" cy="14" r="3" fill="white" fillOpacity="0.7" />
-          <circle cx="14" cy="34" r="2.5" fill="white" fillOpacity="0.7" />
+          <circle cx="34" cy="14" r="2.5" fill="white" fillOpacity="0.6" />
+          <circle cx="14" cy="34" r="2" fill="white" fillOpacity="0.6" />
         </svg>
       )
     case "contact":
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#ec4899" />
-          <rect x="10" y="14" width="28" height="20" rx="2" fill="white" />
-          <path d="M10 16L24 26L38 16" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M10 32L17 25" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" />
-          <path d="M38 32L31 25" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" />
+          <defs>
+            <linearGradient id="dockContactGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f472b6" />
+              <stop offset="100%" stopColor="#db2777" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockContactGrad)" filter="url(#dockShadow)"/>
+          <rect x="11" y="15" width="26" height="18" rx="2.5" fill="white" opacity="0.95"/>
+          <path
+            d="M11 17.5L24 26L37 17.5"
+            stroke="#ec4899"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.9"
+          />
+          <path d="M11 31L17 25" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+          <path d="M37 31L31 25" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
         </svg>
       )
     case "ide":
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#3b82f6" />
-          <rect x="10" y="10" width="28" height="28" rx="2" fill="white" fillOpacity="0.15" />
-          <rect x="10" y="10" width="28" height="6" rx="2" fill="white" fillOpacity="0.25" />
-          <circle cx="14" cy="13" r="1" fill="white" />
-          <circle cx="17.5" cy="13" r="1" fill="white" />
-          <circle cx="21" cy="13" r="1" fill="white" />
+          <defs>
+            <linearGradient id="dockIdeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#60a5fa" />
+              <stop offset="100%" stopColor="#2563eb" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockIdeGrad)" filter="url(#dockShadow)"/>
+          <rect x="11" y="11" width="26" height="26" rx="2.5" fill="rgba(0,0,0,0.4)" />
+          <rect x="11" y="11" width="26" height="6" rx="2.5" fill="white" fillOpacity="0.15" />
+          <circle cx="14.5" cy="14" r="1" fill="white" opacity="0.8"/>
+          <circle cx="18" cy="14" r="1" fill="white" opacity="0.8"/>
+          <circle cx="21.5" cy="14" r="1" fill="white" opacity="0.8"/>
           <path
-            d="M16 24L20 28L16 32"
-            stroke="white"
+            d="M17 26L21 30L17 34"
+            stroke="#60a5fa"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <line x1="23" y1="32" x2="28" y2="32" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          <line x1="23" y1="34" x2="28" y2="34" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" />
         </svg>
       )
     case "terminal":
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#10b981" />
-          <rect x="10" y="12" width="28" height="24" rx="2" fill="#0a0a0a" fillOpacity="0.6" />
+          <defs>
+            <linearGradient id="dockTerminalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#059669" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockTerminalGrad)" filter="url(#dockShadow)"/>
+          <rect x="10" y="12" width="28" height="24" rx="2.5" fill="rgba(10,10,10,0.75)" />
           <path
-            d="M15 20L19 24L15 28"
-            stroke="#10b981"
+            d="M15 21L19 25L15 29"
+            stroke="#34d399"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <line x1="22" y1="28" x2="29" y2="28" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="22" y1="29" x2="29" y2="29" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="15" cy="16" r="0.8" fill="#34d399" opacity="0.6"/>
+          <circle cx="18" cy="16" r="0.8" fill="#34d399" opacity="0.6"/>
         </svg>
       )
     case "system":
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#6b7280" />
-          <rect x="10" y="10" width="12" height="12" rx="2" fill="white" fillOpacity="0.9" />
-          <rect x="26" y="10" width="12" height="12" rx="2" fill="white" fillOpacity="0.7" />
-          <rect x="10" y="26" width="12" height="12" rx="2" fill="white" fillOpacity="0.7" />
-          <rect x="26" y="26" width="12" height="12" rx="2" fill="white" fillOpacity="0.5" />
+          <defs>
+            <linearGradient id="dockSystemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#9ca3af" />
+              <stop offset="100%" stopColor="#6b7280" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockSystemGrad)" filter="url(#dockShadow)"/>
+          <rect x="12" y="12" width="10" height="10" rx="2" fill="white" fillOpacity="0.9" />
+          <rect x="26" y="12" width="10" height="10" rx="2" fill="white" fillOpacity="0.7" />
+          <rect x="12" y="26" width="10" height="10" rx="2" fill="white" fillOpacity="0.7" />
+          <rect x="26" y="26" width="10" height="10" rx="2" fill="white" fillOpacity="0.5" />
         </svg>
       )
     default:
       return (
         <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <rect width="48" height="48" rx="10" fill="#6b7280" />
-          <circle cx="24" cy="24" r="8" stroke="white" strokeWidth="2" />
+          <defs>
+            <linearGradient id="dockDefaultGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#9ca3af" />
+              <stop offset="100%" stopColor="#6b7280" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill="url(#dockDefaultGrad)" filter="url(#dockShadow)"/>
+          <circle cx="24" cy="24" r="7" stroke="white" strokeWidth="2" opacity="0.9"/>
         </svg>
       )
   }
