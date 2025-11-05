@@ -133,7 +133,7 @@ export function Window({
     return (
       <div
         className={`
-          fixed inset-0 bg-neo-bg border-0 select-none overflow-hidden backdrop-blur-sm z-50
+          fixed inset-0 bg-background border-0 select-none overflow-hidden z-50
           ${isFocused ? "block" : "hidden"}
         `}
         role="dialog"
@@ -142,16 +142,16 @@ export function Window({
         onKeyDown={handleKeyDown}
         tabIndex={-1}
       >
-        <header className="flex items-center justify-between px-4 py-4 bg-neo-fg text-neo-bg border-b-2 border-neo-border">
+        <header className="flex items-center justify-between px-4 py-3 bg-muted/50 backdrop-blur-sm border-b border-border">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="w-10 h-10 bg-neo-bg border-2 border-neo-border rounded-lg hover:bg-neo-bg2 transition-colors neo-focus flex items-center justify-center"
+              className="w-9 h-9 rounded-lg hover:bg-muted transition-colors flex items-center justify-center"
               aria-label={`Close ${title} window`}
               type="button"
             >
               <svg
-                className="w-5 h-5 text-neo-fg"
+                className="w-5 h-5 text-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -160,16 +160,16 @@ export function Window({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <h1 className="text-lg font-bold tracking-wide">{title}</h1>
+            <h1 className="text-lg font-semibold">{title}</h1>
           </div>
           <button
             onClick={onMinimize}
-            className="w-10 h-10 bg-neo-bg border-2 border-neo-border rounded-lg hover:bg-neo-bg2 transition-colors neo-focus flex items-center justify-center"
+            className="w-9 h-9 rounded-lg hover:bg-muted transition-colors flex items-center justify-center"
             aria-label={`Minimize ${title} window`}
             type="button"
           >
             <svg
-              className="w-5 h-5 text-neo-fg"
+              className="w-5 h-5 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -181,7 +181,7 @@ export function Window({
         </header>
 
         {/* Mobile Content */}
-        <main className="flex-1 overflow-auto bg-neo-bg" style={{ height: "calc(100vh - 80px)" }}>
+        <main className="flex-1 overflow-auto bg-background" style={{ height: "calc(100vh - 64px)" }}>
           <div className="p-4">{children}</div>
         </main>
       </div>
@@ -192,10 +192,10 @@ export function Window({
     <div
       ref={windowRef}
       className={`
-        absolute bg-neo-bg border-2 border-neo-border rounded-xl select-none overflow-hidden backdrop-blur-sm
-        ${isFocused ? "shadow-neo" : "shadow-[2px_2px_0_0_var(--neo-shadow)] opacity-95"}
+        absolute bg-card border border-border select-none overflow-hidden backdrop-blur-xl
+        ${isFocused ? "shadow-lg ring-1 ring-primary/20" : "shadow-md opacity-95"}
         ${isDragging ? "cursor-grabbing transition-none" : "cursor-default transition-all duration-300 ease-out"}
-        ${tilingMode !== "normal" ? "rounded-none" : "rounded-xl"} 
+        ${tilingMode !== "normal" ? "rounded-none" : "rounded-xl"}
       `}
       style={{
         left: position.x,
@@ -215,18 +215,18 @@ export function Window({
     >
       <header
         className={`
-          window-header flex items-center justify-between px-4 py-3 bg-neo-fg text-neo-bg border-b border-neo-border/20
+          window-header flex items-center justify-between px-4 py-2.5 bg-muted/50 backdrop-blur-sm border-b border-border
           ${isDragging ? "cursor-grabbing" : tilingMode === "normal" ? "cursor-grab" : "cursor-default"}
         `}
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
       >
         <div className="flex items-center gap-2">
-          <h1 className="text-sm font-semibold tracking-wide">{title}</h1>
+          <h1 className="text-sm font-semibold text-foreground">{title}</h1>
           {/* Tiling mode indicator */}
           {tilingMode !== "normal" && (
             <span
-              className="text-xs px-2 py-1 bg-neo-bg/20 rounded text-neo-bg/80 font-medium"
+              className="text-xs px-2 py-0.5 bg-primary/10 rounded-md text-primary font-medium"
               aria-label={`Window is ${tilingMode}`}
             >
               {tilingMode === "tile-left" && "◐"}
@@ -235,7 +235,7 @@ export function Window({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2" role="group" aria-label="Window controls">
+        <div className="flex items-center gap-1.5" role="group" aria-label="Window controls">
           {/* Tiling control buttons */}
           {tilingMode !== "normal" && (
             <button
@@ -243,12 +243,12 @@ export function Window({
                 e.stopPropagation()
                 onRestoreFromTiling?.()
               }}
-              className="w-6 h-6 bg-neo-bg border border-neo-border/30 rounded-md hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all duration-150 neo-focus flex items-center justify-center hover:bg-neo-bg2"
+              className="w-7 h-7 rounded-md hover:bg-muted transition-colors duration-150 flex items-center justify-center group"
               aria-label={`Restore ${title} window to normal size`}
               title="Restore window"
               type="button"
             >
-              <span className="text-xs font-bold text-neo-fg" aria-hidden="true">
+              <span className="text-sm text-muted-foreground group-hover:text-foreground" aria-hidden="true">
                 ⧉
               </span>
             </button>
@@ -260,11 +260,11 @@ export function Window({
               e.stopPropagation()
               onMinimize()
             }}
-            className="w-6 h-6 bg-neo-bg border border-neo-border/30 rounded-md hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all duration-150 neo-focus flex items-center justify-center hover:bg-neo-bg2"
+            className="w-7 h-7 rounded-md hover:bg-muted transition-colors duration-150 flex items-center justify-center group"
             aria-label={`Minimize ${title} window`}
             type="button"
           >
-            <span className="text-xs font-bold text-neo-fg" aria-hidden="true">
+            <span className="text-sm text-muted-foreground group-hover:text-foreground" aria-hidden="true">
               −
             </span>
           </button>
@@ -274,11 +274,11 @@ export function Window({
               e.stopPropagation()
               onClose()
             }}
-            className="w-6 h-6 bg-neo-bg border border-neo-border/30 rounded-md hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all duration-150 neo-focus flex items-center justify-center hover:bg-neo-bg2"
+            className="w-7 h-7 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors duration-150 flex items-center justify-center group"
             aria-label={`Close ${title} window`}
             type="button"
           >
-            <span className="text-xs font-bold text-neo-fg" aria-hidden="true">
+            <span className="text-sm text-muted-foreground group-hover:text-destructive" aria-hidden="true">
               ×
             </span>
           </button>
@@ -286,7 +286,7 @@ export function Window({
       </header>
 
       {/* Window Content */}
-      <main className="h-full overflow-auto bg-neo-bg" style={{ height: size.height - 60 }}>
+      <main className="h-full overflow-auto bg-card" style={{ height: size.height - 60 }}>
         {children}
       </main>
     </div>
