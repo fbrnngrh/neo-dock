@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Desktop } from "@/components/desktop/Desktop"
 import { Dock } from "@/components/desktop/Dock"
 import { Window } from "@/components/desktop/Window"
+import { AnimatedEyes } from "@/components/desktop/AnimatedEyes"
 import { CommandPalette, type CommandAction } from "@/components/command/CommandPalette"
 import { KeyboardShortcutsHelp } from "@/components/desktop/KeyboardShortcutsHelp"
 import { useWindowManager } from "@/hooks/use-window-manager"
@@ -316,6 +317,9 @@ export default function HomePage() {
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp isVisible={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />
+
+      {/* Animated Eyes - hide on mobile */}
+      {!isMobile && <AnimatedEyes />}
 
       <Dock
         runningApps={runningApps}
