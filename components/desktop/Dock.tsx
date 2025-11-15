@@ -1,6 +1,6 @@
 "use client"
 
-import { useMobile } from "@/hooks/use-mobile" // Added mobile detection
+import { useMobile } from "@/hooks/use-mobile"
 
 interface DockProps {
   runningApps: string[]
@@ -12,175 +12,134 @@ interface DockProps {
 }
 
 const AppIcon = ({ type }: { type: string }) => {
+  // Neobrutalism color palette - vibrant and bold
+  const colors = {
+    about: "#60A5FA", // Blue
+    projects: "#A855F7", // Purple
+    skills: "#FB923C", // Orange
+    contact: "#F472B6", // Pink
+    ide: "#3B82F6", // Deep Blue
+    terminal: "#34D399", // Green
+    system: "#94A3B8", // Gray
+  }
+
+  const color = colors[type as keyof typeof colors] || colors.system
+
   switch (type) {
     case "about":
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockAboutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#60a5fa" />
-              <stop offset="100%" stopColor="#3b82f6" />
-            </linearGradient>
-            <filter id="dockShadow">
-              <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.25"/>
-            </filter>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockAboutGrad)" filter="url(#dockShadow)"/>
-          <circle cx="24" cy="17" r="5.5" fill="white" opacity="0.95"/>
-          <path
-            d="M14 37C14 32.5817 17.5817 29 22 29H26C30.4183 29 34 32.5817 34 37V38H14V37Z"
-            fill="white"
-            opacity="0.95"
-          />
-        </svg>
+        <div className="relative w-12 h-12 bg-[#60A5FA] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          {/* User icon */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="w-4 h-4 bg-white border-2 border-black rounded-full mb-1" />
+            <div className="w-6 h-3 bg-white border-2 border-black border-t-0 rounded-b-full" />
+          </div>
+        </div>
       )
     case "projects":
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockProjectsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#a855f7" />
-              <stop offset="100%" stopColor="#7e22ce" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockProjectsGrad)" filter="url(#dockShadow)"/>
-          <rect x="11" y="11" width="26" height="26" rx="3" fill="white" fillOpacity="0.15" />
-          <path
-            d="M11 17C11 13.6863 13.6863 11 17 11H31C34.3137 11 37 13.6863 37 17V18H11V17Z"
-            fill="white"
-            fillOpacity="0.25"
-          />
-          <circle cx="15" cy="14.5" r="1.2" fill="white" opacity="0.9"/>
-          <circle cx="19" cy="14.5" r="1.2" fill="white" opacity="0.9"/>
-          <circle cx="23" cy="14.5" r="1.2" fill="white" opacity="0.9"/>
-          <path
-            d="M18 27L22 31L30 23"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.95"
-          />
-        </svg>
+        <div className="relative w-12 h-12 bg-[#A855F7] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          {/* Folder icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative w-7 h-6">
+              {/* Folder tab */}
+              <div className="absolute top-0 left-0 w-4 h-2 bg-white border-2 border-black border-b-0 rounded-t-sm" />
+              {/* Folder body */}
+              <div className="absolute top-1.5 left-0 w-7 h-4 bg-white border-2 border-black rounded-sm" />
+              {/* Checkmark */}
+              <div className="absolute top-2.5 left-1 w-1.5 h-0.5 bg-black rotate-45" />
+              <div className="absolute top-2 left-2 w-2.5 h-0.5 bg-black -rotate-45" />
+            </div>
+          </div>
+        </div>
       )
     case "skills":
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockSkillsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fb923c" />
-              <stop offset="100%" stopColor="#ea580c" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockSkillsGrad)" filter="url(#dockShadow)"/>
-          <path
-            d="M24 9L27.708 19.292L38 23L27.708 26.708L24 37L20.292 26.708L10 23L20.292 19.292L24 9Z"
-            fill="white"
-            opacity="0.95"
-          />
-          <circle cx="34" cy="14" r="2.5" fill="white" fillOpacity="0.6" />
-          <circle cx="14" cy="34" r="2" fill="white" fillOpacity="0.6" />
-        </svg>
+        <div className="relative w-12 h-12 bg-[#FB923C] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          {/* Star/sparkle icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative w-6 h-6">
+              {/* Center star */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white border-2 border-black rotate-45" />
+              {/* Points */}
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 h-2 bg-white border-2 border-black" />
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-2 bg-white border-2 border-black" />
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-2 h-1 bg-white border-2 border-black" />
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-1 bg-white border-2 border-black" />
+            </div>
+          </div>
+        </div>
       )
     case "contact":
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockContactGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f472b6" />
-              <stop offset="100%" stopColor="#db2777" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockContactGrad)" filter="url(#dockShadow)"/>
-          <rect x="11" y="15" width="26" height="18" rx="2.5" fill="white" opacity="0.95"/>
-          <path
-            d="M11 17.5L24 26L37 17.5"
-            stroke="#ec4899"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.9"
-          />
-          <path d="M11 31L17 25" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-          <path d="M37 31L31 25" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-        </svg>
+        <div className="relative w-12 h-12 bg-[#F472B6] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          {/* Mail icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative w-7 h-5">
+              {/* Envelope */}
+              <div className="absolute inset-0 bg-white border-2 border-black rounded-sm" />
+              {/* Envelope flap */}
+              <div className="absolute top-0 left-0 right-0 h-2.5 overflow-hidden">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-5 h-5 bg-[#F472B6] border-2 border-black rotate-45 -mt-3.5" />
+              </div>
+            </div>
+          </div>
+        </div>
       )
     case "ide":
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockIdeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#60a5fa" />
-              <stop offset="100%" stopColor="#2563eb" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockIdeGrad)" filter="url(#dockShadow)"/>
-          <rect x="11" y="11" width="26" height="26" rx="2.5" fill="rgba(0,0,0,0.4)" />
-          <rect x="11" y="11" width="26" height="6" rx="2.5" fill="white" fillOpacity="0.15" />
-          <circle cx="14.5" cy="14" r="1" fill="white" opacity="0.8"/>
-          <circle cx="18" cy="14" r="1" fill="white" opacity="0.8"/>
-          <circle cx="21.5" cy="14" r="1" fill="white" opacity="0.8"/>
-          <path
-            d="M17 26L21 30L17 34"
-            stroke="#60a5fa"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <line x1="23" y1="34" x2="28" y2="34" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <div className="relative w-12 h-12 bg-[#3B82F6] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          {/* Code icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative w-7 h-6">
+              {/* Code brackets */}
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1.5 h-3 border-l-2 border-t-2 border-b-2 border-white" />
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1.5 h-3 border-r-2 border-t-2 border-b-2 border-white" />
+              {/* Slash */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-0.5 h-4 bg-white rotate-12" />
+            </div>
+          </div>
+        </div>
       )
     case "terminal":
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockTerminalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#34d399" />
-              <stop offset="100%" stopColor="#059669" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockTerminalGrad)" filter="url(#dockShadow)"/>
-          <rect x="10" y="12" width="28" height="24" rx="2.5" fill="rgba(10,10,10,0.75)" />
-          <path
-            d="M15 21L19 25L15 29"
-            stroke="#34d399"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <line x1="22" y1="29" x2="29" y2="29" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="15" cy="16" r="0.8" fill="#34d399" opacity="0.6"/>
-          <circle cx="18" cy="16" r="0.8" fill="#34d399" opacity="0.6"/>
-        </svg>
+        <div className="relative w-12 h-12 bg-[#34D399] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          {/* Terminal icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative w-7 h-6">
+              {/* Terminal window */}
+              <div className="absolute inset-0 bg-black rounded-sm" />
+              {/* Command prompt */}
+              <div className="absolute left-1 top-1/2 transform -translate-y-1/2">
+                <div className="w-1.5 h-1.5 border-l-2 border-b-2 border-white transform rotate-45 -ml-0.5" />
+              </div>
+              {/* Cursor */}
+              <div className="absolute right-1.5 bottom-1.5 w-2 h-0.5 bg-white" />
+            </div>
+          </div>
+        </div>
       )
     case "system":
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockSystemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#9ca3af" />
-              <stop offset="100%" stopColor="#6b7280" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockSystemGrad)" filter="url(#dockShadow)"/>
-          <rect x="12" y="12" width="10" height="10" rx="2" fill="white" fillOpacity="0.9" />
-          <rect x="26" y="12" width="10" height="10" rx="2" fill="white" fillOpacity="0.7" />
-          <rect x="12" y="26" width="10" height="10" rx="2" fill="white" fillOpacity="0.7" />
-          <rect x="26" y="26" width="10" height="10" rx="2" fill="white" fillOpacity="0.5" />
-        </svg>
+        <div className="relative w-12 h-12 bg-[#94A3B8] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          {/* Grid/apps icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="grid grid-cols-2 gap-1">
+              <div className="w-2 h-2 bg-white border-2 border-black" />
+              <div className="w-2 h-2 bg-white border-2 border-black" />
+              <div className="w-2 h-2 bg-white border-2 border-black" />
+              <div className="w-2 h-2 bg-white border-2 border-black" />
+            </div>
+          </div>
+        </div>
       )
     default:
       return (
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-          <defs>
-            <linearGradient id="dockDefaultGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#9ca3af" />
-              <stop offset="100%" stopColor="#6b7280" />
-            </linearGradient>
-          </defs>
-          <rect width="48" height="48" rx="12" fill="url(#dockDefaultGrad)" filter="url(#dockShadow)"/>
-          <circle cx="24" cy="24" r="7" stroke="white" strokeWidth="2" opacity="0.9"/>
-        </svg>
+        <div className="relative w-12 h-12 bg-[#94A3B8] border-4 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-4 h-4 bg-white border-2 border-black rounded-full" />
+          </div>
+        </div>
       )
   }
 }
@@ -194,64 +153,69 @@ export function Dock({ runningApps, minimizedApps, onAppSelect, onSystemAction, 
       aria-label="Application dock"
       className={`
         absolute left-1/2 transform -translate-x-1/2 z-50
-        ${isMobile ? "bottom-2" : "bottom-4"}
+        ${isMobile ? "bottom-2" : "bottom-6"}
       `}
     >
       <div
         className={`
-          bg-card/80 backdrop-blur-xl border border-border shadow-lg
-          ${isMobile ? "rounded-2xl px-4 py-3" : "rounded-2xl px-6 py-3"}
+          bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]
+          ${isMobile ? "rounded-2xl px-4 py-3" : "rounded-3xl px-6 py-4"}
+          transition-all duration-200
         `}
       >
-        <div className={`flex items-center ${isMobile ? "gap-4" : "gap-4"}`}>
-          <div className={`flex items-center ${isMobile ? "gap-1" : "gap-1.5"}`} role="group" aria-label="Applications">
+        <div className={`flex items-center ${isMobile ? "gap-3" : "gap-4"}`}>
+          {/* App Icons */}
+          <div className={`flex items-center ${isMobile ? "gap-2" : "gap-3"}`} role="group" aria-label="Applications">
             {apps.map((app) => {
               const isRunning = runningApps.includes(app.id)
               const isMinimized = minimizedApps.includes(app.id)
 
               return (
-                <button
-                  key={app.id}
-                  onClick={() => {
-                    if (isRunning) {
-                      onAppSelect(app.id)
-                    } else {
-                      onOpenApp(app.id)
-                    }
-                  }}
-                  className={`
-                    relative hover:scale-110 transition-transform duration-200 rounded-xl hover:bg-muted
-                    ${isMobile ? "p-2" : "p-1.5"}
-                  `}
-                  aria-label={isRunning ? `${isMinimized ? "Restore" : "Focus"} ${app.title}` : `Open ${app.title}`}
-                  aria-pressed={isRunning && !isMinimized}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <AppIcon type={app.id} />
+                <div key={app.id} className="relative">
+                  <button
+                    onClick={() => {
+                      if (isRunning) {
+                        onAppSelect(app.id)
+                      } else {
+                        onOpenApp(app.id)
+                      }
+                    }}
+                    className={`
+                      relative transition-transform duration-150 active:scale-95
+                      ${isMobile ? "" : ""}
+                    `}
+                    aria-label={isRunning ? `${isMinimized ? "Restore" : "Focus"} ${app.title}` : `Open ${app.title}`}
+                    aria-pressed={isRunning && !isMinimized}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <AppIcon type={app.id} />
+                  </button>
+
+                  {/* Running indicator - Neobrutalism style */}
                   {isRunning && (
-                    <div
-                      className={`absolute left-1/2 transform -translate-x-1/2 bg-primary transition-all duration-150 ${
-                        isMinimized
-                          ? `w-2 h-2 rounded-sm ${isMobile ? "-bottom-1" : "-bottom-1"}` // Solid square for minimized
-                          : `w-1.5 h-1.5 rounded-full ${isMobile ? "-bottom-1" : "-bottom-1"}` // Dot for running
-                      }`}
-                      aria-hidden="true"
-                    />
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+                      {isMinimized ? (
+                        // Minimized: Bold square indicator
+                        <div className="w-3 h-3 bg-black border-2 border-black rotate-45" />
+                      ) : (
+                        // Running: Bold dot indicator
+                        <div className="w-2.5 h-2.5 bg-black rounded-full border-2 border-black" />
+                      )}
+                    </div>
                   )}
-                </button>
+                </div>
               )
             })}
           </div>
 
-          <div className={`bg-border ${isMobile ? "w-px h-8" : "w-px h-6"}`} aria-hidden="true"></div>
+          {/* Separator */}
+          <div className={`bg-black ${isMobile ? "w-1 h-10" : "w-1 h-12"} rounded-full`} aria-hidden="true"></div>
 
+          {/* System Button */}
           <button
             onClick={() => onSystemAction?.("menu")}
-            className={`
-              hover:scale-110 transition-transform duration-200 rounded-xl hover:bg-muted
-              ${isMobile ? "p-2" : "p-1.5"}
-            `}
+            className="relative transition-transform duration-150 active:scale-95"
             aria-label="Open system menu"
             role="button"
             tabIndex={0}
@@ -259,22 +223,31 @@ export function Dock({ runningApps, minimizedApps, onAppSelect, onSystemAction, 
             <AppIcon type="system" />
           </button>
 
+          {/* Branding - only show when no apps running */}
           {runningApps.length === 0 && (
             <>
+              <div className={`bg-black ${isMobile ? "w-1 h-10" : "w-1 h-12"} rounded-full`} aria-hidden="true"></div>
               <div
-                className={`bg-border ${isMobile ? "w-px h-8" : "w-px h-6"}`}
-                aria-hidden="true"
-              ></div>
-              <div
-                className={`font-bold text-foreground tracking-wider ${isMobile ? "text-base" : "text-sm"}`}
-                aria-label="Neo-OS branding"
+                className={`font-black text-black tracking-tighter ${isMobile ? "text-lg" : "text-xl"}`}
+                style={{
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  textShadow: '2px 2px 0px rgba(0,0,0,0.1)'
+                }}
+                aria-label="Neo-Dock branding"
               >
-                NEO-OS
+                NEO-DOCK
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Dock platform base - like macOS */}
+      <div className={`
+        absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full
+        ${isMobile ? "w-32 h-1" : "w-48 h-1"}
+        bg-black/20 rounded-full blur-sm
+      `} aria-hidden="true" />
     </nav>
   )
 }
