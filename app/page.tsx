@@ -25,6 +25,7 @@ export default function HomePage() {
     tileWindow,
     restoreFromTiling,
     updateWindowPosition,
+    updateWindowSize,
     closeAllWindows,
     minimizeAllWindows,
     focusNextWindow,
@@ -305,6 +306,7 @@ export default function HomePage() {
           onMinimize={() => minimizeWindow(window.id)}
           onFocus={() => focusWindow(window.id)}
           onPositionChange={(position) => updateWindowPosition(window.id, position)}
+          onSizeChange={(size) => updateWindowSize(window.id, size)}
           onTile={(mode) => !isMobile && tileWindow(window.id, mode)}
           onRestoreFromTiling={() => !isMobile && restoreFromTiling(window.id)}
         >

@@ -196,6 +196,20 @@ export function useWindowManager() {
     )
   }, [])
 
+  const updateWindowSize = useCallback((windowId: string, size: { width: number; height: number }) => {
+    setWindows((prev) =>
+      prev.map((w) => {
+        if (w.id === windowId) {
+          return {
+            ...w,
+            size,
+          }
+        }
+        return w
+      }),
+    )
+  }, [])
+
   const closeAllWindows = useCallback(() => {
     setWindows([])
   }, [])
@@ -252,6 +266,7 @@ export function useWindowManager() {
     tileWindow, // Added tiling function
     restoreFromTiling, // Added restore from tiling function
     updateWindowPosition, // Added position update function
+    updateWindowSize, // Added size update function
     closeAllWindows,
     minimizeAllWindows,
     focusNextWindow,
